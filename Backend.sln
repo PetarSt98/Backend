@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.1.32421.90
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Backend", "Backend\Backend.csproj", "{97C1CAAE-8CC1-40DF-A1AC-FA705F582656}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SynchronizerLibrary", "SynchronizerLibrary\SynchronizerLibrary.csproj", "{AF2691FC-FBB1-4C09-A697-C5854D1BA6CC}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{97C1CAAE-8CC1-40DF-A1AC-FA705F582656}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{97C1CAAE-8CC1-40DF-A1AC-FA705F582656}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{97C1CAAE-8CC1-40DF-A1AC-FA705F582656}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{97C1CAAE-8CC1-40DF-A1AC-FA705F582656}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AF2691FC-FBB1-4C09-A697-C5854D1BA6CC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AF2691FC-FBB1-4C09-A697-C5854D1BA6CC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AF2691FC-FBB1-4C09-A697-C5854D1BA6CC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AF2691FC-FBB1-4C09-A697-C5854D1BA6CC}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {B133F792-F799-4AF7-A753-51C5B3A3E1E7}
+	EndGlobalSection
+EndGlobal
