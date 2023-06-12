@@ -3,7 +3,7 @@ FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build
 WORKDIR /app
 
 # Copy and restore the project files
-COPY ./Backend.csproj /app/Backend.csproj
+COPY Backend.csproj .
 
 RUN dotnet restore
 
