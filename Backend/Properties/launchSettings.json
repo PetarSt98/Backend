@@ -14,7 +14,7 @@
       "dotnetRunMessages": true,
       "launchBrowser": true,
       "launchUrl": "swagger",
-      "applicationUrl": "https://localhost:7164;http://localhost:5164",
+      "applicationUrl": "https://rds-back-rds-frontend.app.cern.ch",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       }

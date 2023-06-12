@@ -66,7 +66,7 @@ namespace Backend
                 options.AddDefaultPolicy(
                     builder =>
                     {
-                        builder.WithOrigins("http://localhost:3000") // your frontend's domain and port
+                        builder.WithOrigins("https://rds-front-rds-frontend.app.cern.ch") // your frontend's domain and port
                                .AllowAnyHeader()
                                .AllowAnyMethod()
                                .AllowCredentials(); // add this line
