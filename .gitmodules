@@ -1,4 +1,5 @@
 [submodule "SynchronizerLibrary"]
 	path = SynchronizerLibrary
-	url = https://<gitlab+deploy-token-2757>:<ujjuzY-4tXo4DUAXyy8S>@gitlab.cern.ch/winsrvinfra/SynchronizerLibrary.git
+	url = https://gitlab.cern.ch/winsrvinfra/SynchronizerLibrary.git
+
 
