@@ -4,13 +4,15 @@ WORKDIR /app
 
 # Copy and restore the main project
 COPY Backend/Backend.csproj Backend/
-COPY SharedLibrary/SharedLibrary.csproj SharedLibrary/
 RUN dotnet restore Backend/Backend.csproj
 
-# Copy the rest of the source code and build the application
+# Copy and build the shared library project
+COPY SharedLibrary/SharedLibrary.csproj SharedLibrary/
+RUN dotnet build SharedLibrary/SharedLibrary.csproj -c Release -o /app/build/SharedLibrary
+
+# Copy the rest of the source code and build the main project
 COPY Backend/ Backend/
-COPY SharedLibrary/ SharedLibrary/
-RUN dotnet build Backend/Backend.csproj -c Release -o /app/build
+RUN dotnet build Backend/Backend.csproj -c Release -o /app/build/Backend
 
 # Stage 2: Publish the application
 FROM build AS publish
