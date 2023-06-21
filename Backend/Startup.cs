@@ -66,7 +66,7 @@ namespace Backend
                 options.AddDefaultPolicy(
                     builder =>
                     {
-                        builder.WithOrigins("https://rds-front-rds-frontend.app.cern.ch/") // your frontend's domain and port
+                        builder.WithOrigins("https://rds-front-rds-frontend.app.cern.ch") // your frontend's domain and port
                                .AllowAnyHeader()
                                .AllowAnyMethod()
                                .AllowCredentials(); // add this line
@@ -89,7 +89,10 @@ namespace Backend
                     c.SwaggerEndpoint("/swagger/v1/swagger.json", "Backend v1");
 
                     // Add this code to enable JWT authentication in Swagger UI
-                    c.OAuthUsePkce();
+                    c.OAuth2RedirectUrl("http://localhost:8080/swagger/oauth2-redirect.html"); // Set the correct redirect URL for your application
+                    c.OAuthClientId("swagger");
+                    c.OAuthAppName("Swagger UI");
+                    c.OAuthUseBasicAuthenticationWithAccessCodeGrant();
                 });
             }
             app.UseAuthentication();
