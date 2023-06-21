@@ -4,10 +4,11 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.OpenApi.Models;
-using Backend.Controllers; // If IUserService and UserSearcher are in this namespace
+using Backend.Controllers;
 using Microsoft.IdentityModel.Tokens;
-// using SynchronizerLibrary;  // Uncomment if IUserService and UserSearcher are in this namespace
 using NetCoreOidcExample.Helpers;
+using Backend.ExchangeTokenService;
+
 namespace Backend
 {
     public class Startup
@@ -24,7 +25,7 @@ namespace Backend
             services.AddControllers();
             services.AddEndpointsApiExplorer();
             services.AddScoped<AuthorizeGroupAttribute>();
-            // Add this code to register JWT authentication schema
+
             services.AddAuthentication("Bearer")
                 .AddJwtBearer("Bearer", options =>
                 {
@@ -39,7 +40,6 @@ namespace Backend
             {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "Backend", Version = "v1" });
 
-                // Add this code to integrate JWT in Swagger UI
                 c.AddSecurityDefinition("bearer", new OpenApiSecurityScheme()
                 {
                     In = ParameterLocation.Header,
@@ -60,26 +60,24 @@ namespace Backend
                 });
             });
 
-            // Configure CORS
             services.AddCors(options =>
             {
                 options.AddDefaultPolicy(
                     builder =>
                     {
-                        builder.WithOrigins("https://rds-front-rds-frontend.app.cern.ch") // your frontend's domain and port
+                        builder.WithOrigins("https://rds-front-rds-frontend.app.cern.ch")
                                .AllowAnyHeader()
                                .AllowAnyMethod()
-                               .AllowCredentials(); // add this line
+                               .AllowCredentials();
                     });
             });
 
-            // Register your IUserService here
             services.AddScoped<IUserService, UserSearcher>();
+            services.AddHttpClient<ITokenService, TokenService>(); // Add this line
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
-            // if (env.IsDevelopment())
             if (true)
             {
                 app.UseDeveloperExceptionPage();
@@ -88,8 +86,7 @@ namespace Backend
                 {
                     c.SwaggerEndpoint("/swagger/v1/swagger.json", "Backend v1");
 
-                    // Add this code to enable JWT authentication in Swagger UI
-                    c.OAuth2RedirectUrl("http://localhost:8080/swagger/oauth2-redirect.html"); // Set the correct redirect URL for your application
+                    c.OAuth2RedirectUrl("http://localhost:8080/swagger/oauth2-redirect.html");
                     c.OAuthClientId("swagger");
                     c.OAuthAppName("Swagger UI");
                     c.OAuthUseBasicAuthenticationWithAccessCodeGrant();
@@ -100,7 +97,6 @@ namespace Backend
             app.UseRouting();
             app.UseAuthorization();
 
-            // Use CORS
             app.UseCors();
 
             app.UseEndpoints(endpoints =>
