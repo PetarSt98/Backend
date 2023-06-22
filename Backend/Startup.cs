@@ -1,13 +1,18 @@
-﻿using Microsoft.AspNetCore.Builder;
+﻿using System;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.OpenApi.Models;
-using Backend.Controllers;
 using Microsoft.IdentityModel.Tokens;
 using NetCoreOidcExample.Helpers;
 using Backend.ExchangeTokenService;
+using Backend.Modules.AccessValidation;
+using Backend.Modules.ActiveDirectory;
+using Backend.Modules.RequestValidation;
+using Backend.Helpers;
+using Microsoft.AspNetCore.Mvc.NewtonsoftJson;
 
 namespace Backend
 {
@@ -16,92 +21,100 @@ namespace Backend
         public Startup(IConfiguration configuration)
         {
             Configuration = configuration;
+            StaticConfig = configuration;
         }
 
+        public static IConfiguration StaticConfig { get; private set; }
         public IConfiguration Configuration { get; }
 
+        // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddControllers();
-            services.AddEndpointsApiExplorer();
-            services.AddScoped<AuthorizeGroupAttribute>();
-
-            services.AddAuthentication("Bearer")
-                .AddJwtBearer("Bearer", options =>
-                {
-                    options.Authority = "https://auth.cern.ch/auth/realms/cern";
-                    options.TokenValidationParameters = new TokenValidationParameters
-                    {
-                        ValidateAudience = false
-                    };
-                });
-
-            services.AddSwaggerGen(c =>
-            {
-                c.SwaggerDoc("v1", new OpenApiInfo { Title = "Backend", Version = "v1" });
-
-                c.AddSecurityDefinition("bearer", new OpenApiSecurityScheme()
-                {
-                    In = ParameterLocation.Header,
-                    BearerFormat = "JWT",
-                    Scheme = "bearer",
-                    Type = SecuritySchemeType.Http,
-                    Description = "JWT Authorization header using the Bearer scheme."
-                });
-                c.AddSecurityRequirement(new OpenApiSecurityRequirement
-                {
-                    {
-                        new OpenApiSecurityScheme
-                        {
-                            Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "bearer" }
-                        },
-                        Array.Empty<string>()
-                    }
-                });
-            });
-
-            services.AddCors(options =>
-            {
-                options.AddDefaultPolicy(
-                    builder =>
-                    {
-                        builder.WithOrigins("https://rds-front-rds-frontend.app.cern.ch")
-                               .AllowAnyHeader()
-                               .AllowAnyMethod()
-                               .AllowCredentials();
-                    });
-            });
-
-            services.AddScoped<IUserService, UserSearcher>();
-            services.AddHttpClient<ITokenService, TokenService>(); // Add this line
+            RegisterDependencies(services);
+            ConfigureCors(services);
+            ConfigureSwagger(services);
+            services.AddControllers().AddNewtonsoftJson();
         }
 
+        // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
-            if (true)
+            if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
-                app.UseSwagger();
-                app.UseSwaggerUI(c =>
-                {
-                    c.SwaggerEndpoint("/swagger/v1/swagger.json", "Backend v1");
-
-                    c.OAuth2RedirectUrl("http://localhost:8080/swagger/oauth2-redirect.html");
-                    c.OAuthClientId("swagger");
-                    c.OAuthAppName("Swagger UI");
-                    c.OAuthUseBasicAuthenticationWithAccessCodeGrant();
-                });
             }
-            app.UseAuthentication();
+
             app.UseHttpsRedirection();
+
             app.UseRouting();
-            app.UseAuthorization();
-
             app.UseCors();
+            app.UseSwagger();
+            app.UseSwaggerUI(cfg => {
+                cfg.SwaggerEndpoint("/swagger/v1/swagger.json", "Remote Desktop Gateway API");
+                cfg.RoutePrefix = "";
+                cfg.OAuthClientId(Configuration["AppSettings:ClientID"]);
+                cfg.OAuthRealm(Configuration["AppSettings:Issuer"]);
+                cfg.OAuthClientSecret(Configuration["AppSettings:Secret"]);
+            });
+            app.UseAuthorization();
+            app.UseMiddleware<JwtMiddleware>();
 
-            app.UseEndpoints(endpoints =>
-            {
+            app.UseEndpoints(endpoints => {
                 endpoints.MapControllers();
+            });
+        }
+
+        private void RegisterDependencies(IServiceCollection services)
+        {
+            services.AddScoped<IActiveDirectoryProxy, ActiveDirectoryProxy>();
+            services.AddScoped<IRequestValidator, RequestValidator>();
+            services.AddScoped<WorkerAuthorizeAttribute>();
+            services.AddSingleton(Configuration);
+        }
+
+        private void ConfigureCors(IServiceCollection services)
+        {
+            services.AddCors(options => {
+                options.AddPolicy("CorsPolicy", builder => {
+                    builder.WithOrigins("http://localhost:3000") //TODO
+                        .AllowAnyHeader()
+                        .AllowAnyMethod();
+                });
+            });
+        }
+
+        private void ConfigureSwagger(IServiceCollection services)
+        {
+            services.AddSwaggerGen(cfg => {
+                cfg.SwaggerDoc("v1", new OpenApiInfo
+                {
+                    Title = "Remote Desktop Gateway API",
+                    Version = "v1",
+                    Description = "REST API for DB access as well as policy validation.",
+                    Contact = new OpenApiContact
+                    {
+                        Name = "Petar Stojkovic",
+                        Email = "petar.stojkovic@cern.ch"
+                    }
+                });
+                cfg.EnableAnnotations();
+                cfg.AddSecurityDefinition("bearer", new OpenApiSecurityScheme
+                {
+                    In = ParameterLocation.Header,
+                    Scheme = "bearer",
+                    BearerFormat = "JWT",
+                    Type = SecuritySchemeType.OAuth2,
+                    Flows = new OpenApiOAuthFlows
+                    {
+                        Password = new OpenApiOAuthFlow
+                        {
+                            AuthorizationUrl =
+                                new Uri("https://auth.cern.ch/auth/realms/cern/protocol/openid-connect/auth"),
+                            TokenUrl = new Uri("https://auth.cern.ch/auth/realms/cern/protocol/openid-connect/token")
+                        }
+                    }
+                });
+                cfg.OperationFilter<HeaderFilter>();
             });
         }
     }
