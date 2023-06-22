@@ -8,6 +8,7 @@ using SynchronizerLibrary.Loggers;
 using Backend.Exceptions;
 using Swashbuckle.AspNetCore.Annotations;
 using NetCoreOidcExample.Helpers;
+using Backend.Helpers;
 
 namespace Backend.Controllers
 {
@@ -17,12 +18,15 @@ namespace Backend.Controllers
     }
 
     // UserController.cs
-    [Route("api/[controller]")]
-    [ApiController]
-    public class UserSearcher : ControllerBase, IUserService
+    //[Route("api/[controller]")]
+    //[ApiController]
+    public class UserSearcher : AllowCorsController, IUserService
     {
-        [ServiceFilter(typeof(AuthorizeGroupAttribute))]
-        [HttpGet("Search")]
+        
+        [HttpGet]
+        [Helpers.Authorize]
+        [Route("search")]
+        [ServiceFilter(typeof(WorkerAuthorizeAttribute))]
         [SwaggerOperation("Return values - for specific group of the authenticated users only.")]
         public async Task<ActionResult<IEnumerable<string>>> Search(string userName)
         {
