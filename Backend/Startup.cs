@@ -76,11 +76,15 @@ namespace Backend
         {
             services.AddCors(options => {
                 options.AddPolicy("CorsPolicy", builder => {
-                    builder.WithOrigins("https://rds-front-rds-frontend.app.cern.ch/") //TODO
-                        .AllowAnyHeader()
-                        .AllowAnyMethod();
+                    builder.WithOrigins(
+                        "https://rds-front-rds-frontend.app.cern.ch/",
+                        "https://rds-back-new-rds-frontend.app.cern.ch/"
+                    )
+                    .AllowAnyHeader()
+                    .AllowAnyMethod();
                 });
             });
+
         }
 
         private void ConfigureSwagger(IServiceCollection services)
