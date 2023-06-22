@@ -47,7 +47,7 @@ namespace Backend
             app.UseHttpsRedirection();
 
             app.UseRouting();
-            app.UseCors();
+            app.UseCors("CorsPolicy");
             app.UseSwagger();
             app.UseSwaggerUI(cfg => {
                 cfg.SwaggerEndpoint("/swagger/v1/swagger.json", "Remote Desktop Gateway API");
