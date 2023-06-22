@@ -76,7 +76,7 @@ namespace Backend
         {
             services.AddCors(options => {
                 options.AddPolicy("CorsPolicy", builder => {
-                    builder.WithOrigins("http://localhost:3000") //TODO
+                    builder.WithOrigins("https://rds-front-rds-frontend.app.cern.ch/") //TODO
                         .AllowAnyHeader()
                         .AllowAnyMethod();
                 });
