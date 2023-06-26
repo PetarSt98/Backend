@@ -47,15 +47,17 @@ namespace Backend
             app.UseHttpsRedirection();
 
             app.UseRouting();
-            app.UseCors("CorsPolicy");
+            
             app.UseSwagger();
-            app.UseSwaggerUI(cfg => {
+            app.UseSwaggerUI(cfg =>
+            {
                 cfg.SwaggerEndpoint("/swagger/v1/swagger.json", "Remote Desktop Gateway API");
                 cfg.RoutePrefix = "";
                 cfg.OAuthClientId(Configuration["AppSettings:ClientID"]);
                 cfg.OAuthRealm(Configuration["AppSettings:Issuer"]);
                 cfg.OAuthClientSecret(Configuration["AppSettings:Secret"]);
             });
+            app.UseCors("CorsPolicy");
             app.UseAuthorization();
             app.UseMiddleware<JwtMiddleware>();
 
@@ -77,6 +79,7 @@ namespace Backend
             services.AddCors(options => {
                 options.AddPolicy("CorsPolicy", builder => {
                     builder.WithOrigins(
+                        "http://localhost:3000",
                         "https://rds-front-rds-frontend.app.cern.ch/",
                         "https://rds-back-new-rds-frontend.app.cern.ch/"
                     )
