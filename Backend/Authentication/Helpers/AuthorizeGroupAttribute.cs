@@ -3,28 +3,24 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Extensions.Configuration;
+using NetCoreOidcExample.Models;
 
-namespace NetCoreOidcExample.Helpers
-{
+namespace NetCoreOidcExample.Helpers {
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method)]
-    public class AuthorizeGroupAttribute : Attribute, IAuthorizationFilter
-    {
+    public class AuthorizeGroupAttribute : Attribute, IAuthorizationFilter {
         private readonly IConfiguration _configuration;
 
-        public AuthorizeGroupAttribute(IConfiguration configuration)
-        {
+        public AuthorizeGroupAttribute(IConfiguration configuration) {
             _configuration = configuration;
         }
 
-        public void OnAuthorization(AuthorizationFilterContext context)
-        {
+        public void OnAuthorization(AuthorizationFilterContext context) {
             var user = (User)context.HttpContext.Items["User"];
             if (user == null || !IsAdmin(user))
                 context.Result = new JsonResult(new { message = "Unauthorized" }) { StatusCode = StatusCodes.Status401Unauthorized };
         }
 
-        private bool IsAdmin(User user)
-        {
+        private bool IsAdmin(User user) {
             return user.Roles.Contains(_configuration["AppSettings:AdminGroup"]);
         }
     }
