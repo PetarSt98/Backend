@@ -7,8 +7,6 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.OpenApi.Models;
 using Microsoft.IdentityModel.Tokens;
 using NetCoreOidcExample.Helpers;
-using Backend.ExchangeTokenService;
-using Backend.Modules.AccessValidation;
 using Microsoft.AspNetCore.Mvc.NewtonsoftJson;
 using NetCoreOidcExample.Helpers;
 using NetCoreOidcExample.Models;
