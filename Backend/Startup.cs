@@ -32,9 +32,9 @@ namespace Backend
             services.AddSwaggerGen(c => {
                 c.SwaggerDoc("v1", new OpenApiInfo
                 {
-                    Title = "JWT example API",
+                    Title = "Remote Desktop Service",
                     Version = "v1",
-                    Description = "JWT example API Description",
+                    Description = "Remote Desktop Service Backend",
                 });
                 c.EnableAnnotations();
                 c.AddSecurityDefinition("bearer", new OpenApiSecurityScheme()
@@ -100,7 +100,7 @@ namespace Backend
 
         private void RegisterDependencies(IServiceCollection services)
         {
-            services.AddScoped<IUserService, UserSearcher>();
+            services.AddScoped<IUserService, DeviceSearcher>();
             services.AddSingleton(Configuration);
         }
     }
