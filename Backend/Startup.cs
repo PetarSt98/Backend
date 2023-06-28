@@ -10,6 +10,7 @@ using NetCoreOidcExample.Helpers;
 using Microsoft.AspNetCore.Mvc.NewtonsoftJson;
 using NetCoreOidcExample.Helpers;
 using NetCoreOidcExample.Models;
+using Backend.Controllers;
 namespace Backend
 {
     public class Startup
@@ -99,6 +100,7 @@ namespace Backend
 
         private void RegisterDependencies(IServiceCollection services)
         {
+            services.AddScoped<IUserService, UserSearcher>();
             services.AddSingleton(Configuration);
         }
     }

@@ -1,15 +1,14 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using SynchronizerLibrary.Loggers;
 using SynchronizerLibrary.Data;
-using System.DirectoryServices;
-using System.DirectoryServices.AccountManagement;
+using System;
 using System.Diagnostics;
-using SynchronizerLibrary.Loggers;
 using Backend.Exceptions;
 using Swashbuckle.AspNetCore.Annotations;
 using NetCoreOidcExample.Helpers;
-using NetCoreOidcExample.Helpers;
-using NetCoreOidcExample.Models;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace Backend.Controllers
 {
@@ -18,89 +17,70 @@ namespace Backend.Controllers
         Task<ActionResult<IEnumerable<string>>> Search(string userName);
     }
 
-    [Route("api/[controller]")]
+    [Route("api1/[controller]")]
     [ApiController]
     public class UserSearcher : ControllerBase, IUserService
     {
-
         [Authorize]
         [HttpGet]
         [Route("all")]
         [SwaggerOperation("Return values - for authenticated users only.")]
         public async Task<ActionResult<IEnumerable<string>>> Search(string userName)
         {
-            // In a real application, replace the following with actual logic to search in the database
             List<string> devices = new List<string>();
 
-            //LoggerSingleton.General.Info("Started validation of  DB RAPs and corresponding Resources.");
-            Console.WriteLine("Started validation of  DB RAPs and corresponding Resources.");
-            var rap_resources = new List<rap_resource>();
             try
             {
                 using (var db = new RapContext())
                 {
-                    rap_resources.AddRange(GetRapByResourceName(db, userName));
+                    var rap_resources = GetRapByResourceName(db, userName).ToList();
+                    devices.AddRange(rap_resources.Select(r => RemoveDomainFromRapOwner(r.resourceOwner)).ToList());
+                    devices.AddRange(rap_resources.Select(r => RemoveRAPFromUser(r.RAPName)).ToList());
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.Message);
+                return StatusCode(500, $"Internal server error: {ex}");
             }
-            devices.AddRange(rap_resources.Select(r => RemoveDomainFromRapOwner(r.resourceOwner)).ToList());
-            devices.AddRange(rap_resources.Select(r => RemoveRAPFromUser(r.RAPName)).ToList());
-            HashSet<string> uniqueDevices= new HashSet<string>(devices);
-            devices = uniqueDevices.ToList();
 
-            return Ok(devices);
+            return Ok(new HashSet<string>(devices));
         }
 
         private IEnumerable<rap_resource> GetRapByResourceName(RapContext db, string resourceName)
         {
-            IEnumerable<rap_resource> results = null;
             try
             {
-                results = db.rap_resource
-                            .Where(r => r.resourceName.Contains(resourceName))
-                            .ToList();
+                return db.rap_resource
+                    .Where(r => r.resourceName.Contains(resourceName))
+                    .ToList();
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                LoggerSingleton.General.Fatal("Failed query.");
-                Console.WriteLine("Failed query.");
+                LoggerSingleton.General.Fatal($"Failed query: {ex}");
+                throw;
             }
-            return results;
         }
 
         private string RemoveDomainFromRapOwner(string rapOwner)
         {
-            if (rapOwner.StartsWith(@"CERN\"))
-            {
-                return rapOwner.Substring(@"CERN\".Length);
-            }
-            else
-            {
-                return rapOwner;
-            }
+            return rapOwner.StartsWith(@"CERN\")
+                ? rapOwner.Substring(@"CERN\".Length)
+                : rapOwner;
         }
 
         private string RemoveRAPFromUser(string user)
         {
-            if (user.StartsWith("RAP_"))
-            {
-                return user.Substring("RAP_".Length);
-            }
-            else
-            {
-                return user;
-            }
+            return user.StartsWith("RAP_")
+                ? user.Substring("RAP_".Length)
+                : user;
         }
     }
+
     public class User
     {
         public string UserName { get; set; }
         public string DeviceName { get; set; }
     }
-
 
     [Route("api/[controller]")]
     [ApiController]
@@ -115,38 +95,42 @@ namespace Backend.Controllers
             _userSearcher = userService;
         }
 
+        [Authorize]
         [HttpPost("Add")]
-        public async Task<ActionResult<string>> CreateUser(User user)
+        [SwaggerOperation("Create a new user.")]
+        public async Task<ActionResult<string>> CreateUser([FromBody] User user)
         {
-            var pepi = _userSearcher.Search(user.DeviceName);
-            //LoggerSingleton.General.Info("Started validation of  DB RAPs and corresponding Resources.");
-            Console.WriteLine("Started validation of  DB RAPs and corresponding Resources.");
-            var rap_resources = new List<rap_resource>();
             try
             {
+                var searchResult = await _userSearcher.Search(user.DeviceName);
+
+                if (searchResult.Result is StatusCodeResult status && status.StatusCode == 500)
+                {
+                    return StatusCode(500, "Failed to search for user.");
+                }
+
                 using (var db = new RapContext())
                 {
-                    // Create a new rap
                     var newRap = new rap
                     {
                         name = "RAP_" + user.UserName,
-                        description = "",
                         login = user.UserName,
                         port = "3389",
                         resourceGroupName = "LG-" + user.UserName,
-                        resourceGroupDescription = "",
                         synchronized = false,
                         lastModified = DateTime.Now,
                         toDelete = false
                     };
 
-                    // Add the new rap to the raps DbSet
                     db.raps.Add(newRap);
 
-                    Dictionary<string, string> deviceInfo = ExecutePowerShellSOAPScript(user.DeviceName, username, password);
+                    Dictionary<string, string> deviceInfo = ExecutePowerShellSOAPScript(user.DeviceName);
 
-                    if (deviceInfo != null) throw new ArgumentNullException("Unable to contact SOAP or device name not founded");
-                    // Create a new rap_resource
+                    if (deviceInfo == null)
+                    {
+                        return BadRequest("Unable to contact SOAP or device name not found.");
+                    }
+
                     var newRapResource = new rap_resource
                     {
                         RAPName = "RAP_" + user.UserName,
@@ -161,11 +145,8 @@ namespace Backend.Controllers
                         toDelete = false
                     };
 
-                    // Add the new rap_resource to the rap_resource DbSet
                     db.rap_resource.Add(newRapResource);
-
-                    // Save the changes to the database
-                    // db.SaveChanges();
+                    //db.SaveChanges();
                 }
             }
             catch (Exception ex)
@@ -177,7 +158,8 @@ namespace Backend.Controllers
             return "Successful user update";
         }
 
-        static Dictionary<string, string> ExecutePowerShellSOAPScript(string computerName, string userName, string password)
+
+        private Dictionary<string, string> ExecutePowerShellSOAPScript(string computerName)
         {
             try
             {
@@ -185,7 +167,7 @@ namespace Backend.Controllers
                 ProcessStartInfo startInfo = new ProcessStartInfo
                 {
                     FileName = "powershell.exe",
-                    Arguments = $"-ExecutionPolicy Bypass -File \"{scriptPath}\" -SetName1 \"{computerName}\" -UserName1 \"{userName}\" -Password1 \"{password}\"",
+                    Arguments = $"-ExecutionPolicy Bypass -File \"{scriptPath}\" -SetName1 \"{computerName}\" -UserName1 \"{username}\" -Password1 \"{password}\"",
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
                     UseShellExecute = false,
@@ -236,6 +218,7 @@ namespace Backend.Controllers
 
             return result;
         }
+
     }
 
 }
