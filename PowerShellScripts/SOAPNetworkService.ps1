@@ -6,15 +6,28 @@ function Get-LanDbSet([string] $SetName,[String] $UserName,[String] $Password) {
                 $service=New-WebServiceProxy -uri "https://network.cern.ch/sc/soap/soap.fcgi?v=6&WSDL" -Namespace SOAPNetworkService -Class SOAPNetworkServiceClass
                 $service.AuthValue = new-object SOAPNetworkService.Auth
                 $service.AuthValue.token = $service.getAuthToken($UserName,$Password,"NICE")
-                # Call to recursive function for set exploration - output file containing IP addresses at C:\temp.txt
-                $DeviceInfo = $service.getDeviceInfo($SetName)
-                $DeviceInfo | Add-Member -MemberType NoteProperty -Name NetworkDomainName -Value $DeviceInfo.Interfaces.NetworkDomainName
-                $DeviceInfo | Add-Member -MemberType NoteProperty -Name ResponsiblePersonName -Value $DeviceInfo.ResponsiblePerson.Name
-                $DeviceInfo | Add-Member -MemberType NoteProperty -Name ResponsiblePersonEmail -Value $DeviceInfo.ResponsiblePerson.Email
 
-                $OwnerInfo=Get-ADUser -Filter {mail -eq $DeviceInfo.ResponsiblePerson.Email}
-                $DeviceInfo | Add-Member -MemberType NoteProperty -Name ResponsiblePersonUsername -Value $OwnerInfo.Name
-                return $DeviceInfo
+                try {
+                    $DeviceInfo = $service.getDeviceInfo($SetName)
+
+                    $DeviceInfo | Add-Member -MemberType NoteProperty -Name NetworkDomainName -Value $DeviceInfo.Interfaces.NetworkDomainName
+                    $DeviceInfo | Add-Member -MemberType NoteProperty -Name ResponsiblePersonName -Value $DeviceInfo.ResponsiblePerson.Name
+                    $DeviceInfo | Add-Member -MemberType NoteProperty -Name ResponsiblePersonEmail -Value $DeviceInfo.ResponsiblePerson.Email
+                    $DeviceInfo | Add-Member -MemberType NoteProperty -Name UserPersonEmail -Value $DeviceInfo.UserPerson.Email
+
+                    $OwnerInfo=Get-ADUser -Filter {mail -eq $DeviceInfo.ResponsiblePerson.Email}
+                    $UserInfo=Get-ADUser -Filter {mail -eq $DeviceInfo.UserPerson.Email}
+
+                    $DeviceInfo | Add-Member -MemberType NoteProperty -Name ResponsiblePersonUsername -Value $OwnerInfo.Name
+                    $DeviceInfo | Add-Member -MemberType NoteProperty -Name UserPersonUsername -Value $UserInfo.Name
+
+                    return $DeviceInfo
+                } catch {
+                    Write-Host "Caught an exception:"
+                    Write-Host "Exception Type: $($_.Exception.GetType().FullName)"
+                    Write-Host "Exception Message: $($_.Exception.Message)"
+                    return "Device not found"
+                }
 }
 
 # example call to Get-LanDBSet:

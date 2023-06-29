@@ -118,6 +118,13 @@ namespace Backend.Controllers
                     }
                 }
 
+                Dictionary<string, string> deviceInfo = ExecutePowerShellSOAPScript(user.DeviceName);
+
+                if (user.UserName != deviceInfo["ResponsiblePersonUsername"] && user.UserName != deviceInfo["UserPersonUsername"])
+                {
+                    return $"User: {user.UserName} is not an owner or a user of the device: {user.DeviceName}";
+                }
+
                 using (var db = new RapContext())
                 {
                     var newRap = new rap
@@ -132,8 +139,6 @@ namespace Backend.Controllers
                     };
 
                     db.raps.Add(newRap);
-
-                    Dictionary<string, string> deviceInfo = ExecutePowerShellSOAPScript(user.DeviceName);
 
                     if (deviceInfo == null)
                     {
@@ -190,6 +195,13 @@ namespace Backend.Controllers
                 string errors = process.StandardError.ReadToEnd();
 
                 if (output.Length == 0 || errors.Length > 0) throw new ComputerNotFoundInActiveDirectoryException(errors);
+
+                if (output.Contains("Device not found"))
+                {
+                    Console.WriteLine($"Unable to use SOAP operations for device: {computerName}");
+                    LoggerSingleton.Raps.Error($"Unable to use SOAP operations for device: {computerName}");
+                    return null;
+                }
 
                 Dictionary<string, string> result = ConvertStringToDictionary(output);
                 process.WaitForExit();
