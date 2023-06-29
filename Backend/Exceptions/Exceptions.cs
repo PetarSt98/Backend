@@ -92,3 +92,14 @@ namespace Backend.Exceptions
         public CloningException(string message) : base(message) { }
     }
 }
+
+namespace Backend.Exceptions
+{
+    class InvalidFetchingException : Exception
+    {
+        public InvalidFetchingException() : base() { }
+
+        public InvalidFetchingException(string message) : base(message) { }
+    }
+}
+

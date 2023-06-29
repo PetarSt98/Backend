@@ -9,15 +9,16 @@ using NetCoreOidcExample.Helpers;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Security.Authentication;
 
 namespace Backend.Controllers
 {
     public interface IUserService
     {
-        Task<ActionResult<IEnumerable<string>>> Search(string userName);
+        Task<ActionResult<IEnumerable<string>>> Search(string userName, string deviceName);
     }
 
-    [Route("api/[controller]")]
+    [Route("api/search_tabel")]
     [ApiController]
     public class DeviceSearcher : ControllerBase, IUserService
     {
@@ -25,7 +26,7 @@ namespace Backend.Controllers
         [HttpGet]
         [Route("search")]
         [SwaggerOperation("Search for all users of the device")]
-        public async Task<ActionResult<IEnumerable<string>>> Search(string deviceName)
+        public async Task<ActionResult<IEnumerable<string>>> Search(string userName, string deviceName)
         {
             List<string> users = new List<string>();
 
@@ -33,30 +34,56 @@ namespace Backend.Controllers
             {
                 using (var db = new RapContext())
                 {
-                    var rap_resources = GetRapByResourceName(db, deviceName).ToList();
+                    var rap_resources = GetRapByResourceName(db, userName, deviceName).ToList();
+
                     users.AddRange(rap_resources.Select(r => RemoveDomainFromRapOwner(r.resourceOwner)).ToList());
                     users.AddRange(rap_resources.Select(r => RemoveRAPFromUser(r.RAPName)).ToList());
                 }
             }
+            catch (InvalidFetchingException ex)
+            {
+                return BadRequest(ex.Message);
+            }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Internal server error: {ex}");
+                return StatusCode(500, $"Internal server error!");
             }
 
             return Ok(new HashSet<string>(users));
         }
 
-        private IEnumerable<rap_resource> GetRapByResourceName(RapContext db, string resourceName)
+        private IEnumerable<rap_resource> GetRapByResourceName(RapContext db, string userName, string resourceName)
         {
             try
             {
-                return db.rap_resource
-                    .Where(r => r.resourceName.Contains(resourceName))
-                    .ToList();
+
+                string rapName = UserDevicesController.AddRAPToUser(userName);
+                string rapOwner = UserDevicesController.AddDomainToRapOwner(userName);
+                var fetched_resources = db.rap_resource
+                    .Where(r =>
+                        r.resourceName.Contains(resourceName))
+                        .ToList();
+
+                if (fetched_resources.Count() == 0)
+                {
+                    throw new InvalidFetchingException($"Device: {resourceName} does not exist!");
+                }
+
+                fetched_resources =  fetched_resources
+                                    .Where(r => r.RAPName == rapName || r.resourceOwner == rapOwner)
+                                    .ToList();
+
+                if (fetched_resources.Count() == 0)
+                {
+                    throw new InvalidFetchingException($"User: {userName} is not an owner or a user of the Device: {resourceName}!");
+                }
+
+                return fetched_resources;
+
             }
             catch (Exception ex)
             {
-                LoggerSingleton.General.Fatal($"Failed query: {ex}");
+                //LoggerSingleton.General.Fatal($"Failed query: {ex}");
                 throw;
             }
         }
@@ -76,13 +103,14 @@ namespace Backend.Controllers
         }
     }
 
+
     public class User
     {
         public string UserName { get; set; }
         public string DeviceName { get; set; }
     }
 
-    [Route("api/[controller]")]
+    [Route("api/add_pop_up")]
     [ApiController]
     public class UserController : ControllerBase
     {
@@ -102,7 +130,7 @@ namespace Backend.Controllers
         {
             try
             {
-                var searchResult = await _userSearcher.Search(user.DeviceName);
+                var searchResult = await _userSearcher.Search(user.UserName, user.DeviceName);
 
                 if (searchResult.Result is StatusCodeResult status && status.StatusCode == 500)
                 {
@@ -114,11 +142,16 @@ namespace Backend.Controllers
                     var userList = okObjectResult.Value as IEnumerable<string>;
                     if (userList.Contains(user.UserName))
                     {
-                        return "User already exists!";
+                        return "Device already exists!";
                     }
                 }
 
                 Dictionary<string, string> deviceInfo = ExecutePowerShellSOAPScript(user.DeviceName);
+
+                if (deviceInfo == null)
+                {
+                    return $"Device: {user.DeviceName} does not exist!";
+                }
 
                 if (user.UserName != deviceInfo["ResponsiblePersonUsername"] && user.UserName != deviceInfo["UserPersonUsername"])
                 {
@@ -142,7 +175,7 @@ namespace Backend.Controllers
 
                     if (deviceInfo == null)
                     {
-                        return BadRequest("Unable to contact SOAP or device name not found.");
+                        return BadRequest("Unable to contact SOAP or device name not found!");
                     }
 
                     var newRapResource = new rap_resource
@@ -166,14 +199,14 @@ namespace Backend.Controllers
             catch (Exception ex)
             {
                 Console.WriteLine(ex.Message);
-                return "Unsuccessful user update or device does not exists";
+                return "Unsuccessful update or device does not exists!";
             }
 
-            return "Successful user update";
+            return "Successfully added the device!";
         }
 
 
-        private Dictionary<string, string> ExecutePowerShellSOAPScript(string computerName)
+        public static Dictionary<string, string> ExecutePowerShellSOAPScript(string computerName)
         {
             try
             {
@@ -199,7 +232,7 @@ namespace Backend.Controllers
                 if (output.Contains("Device not found"))
                 {
                     Console.WriteLine($"Unable to use SOAP operations for device: {computerName}");
-                    LoggerSingleton.Raps.Error($"Unable to use SOAP operations for device: {computerName}");
+                    //LoggerSingleton.Raps.Error($"Unable to use SOAP operations for device: {computerName}");
                     return null;
                 }
 
@@ -211,7 +244,7 @@ namespace Backend.Controllers
             catch (ComputerNotFoundInActiveDirectoryException ex)
             {
                 Console.WriteLine($"{ex.Message} Unable to use SOAP operations for device: {computerName}");
-                LoggerSingleton.Raps.Error($"{ex.Message} Unable to use SOAP operations for device: {computerName}");
+                //LoggerSingleton.Raps.Error($"{ex.Message} Unable to use SOAP operations for device: {computerName}");
                 return null;
             }
             catch (Exception ex)
@@ -242,7 +275,7 @@ namespace Backend.Controllers
 
     }
 
-    [Route("api/[controller]")]
+    [Route("api/devices_tabel")]
     [ApiController]
     public class UserDevicesController : ControllerBase
     {
@@ -267,8 +300,8 @@ namespace Backend.Controllers
             {
                 using (var db = new RapContext())
                 {
-                    var rap_resources = GetRapByRAPName(db, AddRAPFromUser(userName)).ToList();
-                    rap_resources.AddRange(GetRapByResourceOwner(db, AddDomainFromRapOwner(userName)).ToList());
+                    var rap_resources = GetRapByRAPName(db, AddRAPToUser(userName)).ToList();
+                    rap_resources.AddRange(GetRapByResourceOwner(db, AddDomainToRapOwner(userName)).ToList());
                     devices.AddRange(rap_resources.Select(r => r.resourceName).ToList());
                 }
             }
@@ -279,6 +312,52 @@ namespace Backend.Controllers
 
             return Ok(new HashSet<string>(devices));
         }
+
+        [Authorize]
+        [HttpDelete]
+        [Route("remove")]
+        [SwaggerOperation("Search for all users of the device")]
+        public async Task<ActionResult<string>> RemoveDevice(string userName, string deviceName)
+        {
+            try
+            {
+                using (var db = new RapContext())
+                {
+
+                    string rapName = AddRAPToUser(userName);
+                    string rapOwner = AddDomainToRapOwner(userName);
+                    var resources_to_delete = db.rap_resource
+                        .Where(r =>
+                            r.resourceName.Contains(deviceName) &&
+                            (r.RAPName == rapName || r.resourceOwner == rapOwner)
+                        )
+                        .ToList();
+
+                    if (resources_to_delete.Any())
+                    {
+                        foreach (rap_resource resource in resources_to_delete)
+                        {
+                                resource.toDelete = true;
+                        }
+                        
+                        //db.SaveChanges();
+                    }
+                    else
+                    {
+                        //LoggerSingleton.General.Warn($"Resource with name '{deviceName}' not found");
+                        return "Unsuccessful user removal from device! No such device found for the user!";
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                return $"Unsuccessful user removal! Error: {ex.Message}";
+            }
+
+            return "Successful user removal!";
+        }
+
         private IEnumerable<rap_resource> GetRapByRAPName(RapContext db, string rapName)
         {
             try
@@ -289,7 +368,7 @@ namespace Backend.Controllers
             }
             catch (Exception ex)
             {
-                LoggerSingleton.General.Fatal($"Failed query: {ex}");
+                //LoggerSingleton.General.Fatal($"Failed query: {ex}");
                 throw;
             }
         }
@@ -304,19 +383,19 @@ namespace Backend.Controllers
             }
             catch (Exception ex)
             {
-                LoggerSingleton.General.Fatal($"Failed query: {ex}");
+                //LoggerSingleton.General.Fatal($"Failed query: {ex}");
                 throw;
             }
         }
 
-        private string AddDomainFromRapOwner(string rapOwner)
+        static public string AddDomainToRapOwner(string rapOwner)
         {
             return rapOwner.StartsWith(@"CERN\")
                 ? rapOwner
                 : @"CERN\" + rapOwner;
         }
 
-        private string AddRAPFromUser(string user)
+        static public string AddRAPToUser(string user)
         {
             return user.StartsWith("RAP_")
                 ? user
