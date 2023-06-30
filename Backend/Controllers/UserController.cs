@@ -15,7 +15,7 @@ namespace Backend.Controllers
 {
     public interface IUserService
     {
-        Task<ActionResult<IEnumerable<string>>> Search(string userName, string deviceName);
+        Task<ActionResult<IEnumerable<string>>> Search(string userName, string deviceName, bool fetchToDeleteResource);
     }
 
     [Route("api/search_tabel")]
@@ -26,16 +26,17 @@ namespace Backend.Controllers
         [HttpGet]
         [Route("search")]
         [SwaggerOperation("Search for all users of the device")]
-        public async Task<ActionResult<IEnumerable<string>>> Search(string userName, string deviceName)
+        public async Task<ActionResult<IEnumerable<string>>> Search(string userName, string deviceName, bool fetchToDeleteResource)
         {
+            deviceName = deviceName.ToUpper();
+
             List<string> users = new List<string>();
 
             try
             {
                 using (var db = new RapContext())
                 {
-                    var rap_resources = GetRapByResourceName(db, userName, deviceName).ToList();
-
+                    var rap_resources = GetRapByResourceName(db, userName, deviceName, fetchToDeleteResource).ToList();
                     users.AddRange(rap_resources.Select(r => RemoveDomainFromRapOwner(r.resourceOwner)).ToList());
                     users.AddRange(rap_resources.Select(r => RemoveRAPFromUser(r.RAPName)).ToList());
                 }
@@ -52,7 +53,7 @@ namespace Backend.Controllers
             return Ok(new HashSet<string>(users));
         }
 
-        private IEnumerable<rap_resource> GetRapByResourceName(RapContext db, string userName, string resourceName)
+        private IEnumerable<rap_resource> GetRapByResourceName(RapContext db, string userName, string resourceName, bool fetchToDeleteResource)
         {
             try
             {
@@ -61,7 +62,7 @@ namespace Backend.Controllers
                 string rapOwner = UserDevicesController.AddDomainToRapOwner(userName);
                 var fetched_resources = db.rap_resource
                     .Where(r =>
-                        r.resourceName.Contains(resourceName))
+                        ((r.resourceName == resourceName) && (!r.toDelete || fetchToDeleteResource)))
                         .ToList();
 
                 if (fetched_resources.Count() == 0)
@@ -129,8 +130,15 @@ namespace Backend.Controllers
         public async Task<ActionResult<string>> CreateUser([FromBody] User user)
         {
             try
-            {
-                var searchResult = await _userSearcher.Search(user.UserName, user.DeviceName);
+            {   
+                if (user.DeviceName == "")
+                {
+                    return $"Device name is empty!";
+                }
+
+                user.DeviceName = user.DeviceName.ToUpper();
+
+                var searchResult = await _userSearcher.Search(user.UserName, user.DeviceName, false);
 
                 if (searchResult.Result is StatusCodeResult status && status.StatusCode == 500)
                 {
@@ -193,7 +201,7 @@ namespace Backend.Controllers
                     };
 
                     db.rap_resource.Add(newRapResource);
-                    //db.SaveChanges();
+                    db.SaveChanges();
                 }
             }
             catch (Exception ex)
@@ -302,7 +310,7 @@ namespace Backend.Controllers
                 {
                     var rap_resources = GetRapByRAPName(db, AddRAPToUser(userName)).ToList();
                     rap_resources.AddRange(GetRapByResourceOwner(db, AddDomainToRapOwner(userName)).ToList());
-                    devices.AddRange(rap_resources.Select(r => r.resourceName).ToList());
+                    devices.AddRange(rap_resources.Where(r => !r.toDelete).Select(r => r.resourceName).ToList());
                 }
             }
             catch (Exception ex)
@@ -328,8 +336,8 @@ namespace Backend.Controllers
                     string rapOwner = AddDomainToRapOwner(userName);
                     var resources_to_delete = db.rap_resource
                         .Where(r =>
-                            r.resourceName.Contains(deviceName) &&
-                            (r.RAPName == rapName || r.resourceOwner == rapOwner)
+                            ((r.resourceName == deviceName) &&
+                            (r.RAPName == rapName || r.resourceOwner == rapOwner) && !r.toDelete)
                         )
                         .ToList();
 
@@ -339,8 +347,8 @@ namespace Backend.Controllers
                         {
                                 resource.toDelete = true;
                         }
-                        
-                        //db.SaveChanges();
+
+                        db.SaveChanges();
                     }
                     else
                     {
@@ -362,9 +370,11 @@ namespace Backend.Controllers
         {
             try
             {
-                return db.rap_resource
-                    .Where(r => r.RAPName.Contains(rapName))
-                    .ToList();
+                var fetched_resources = db.rap_resource
+                    .Where(r =>
+                        ((r.RAPName == rapName) && !r.toDelete))
+                        .ToList();
+                return fetched_resources;
             }
             catch (Exception ex)
             {
@@ -377,9 +387,11 @@ namespace Backend.Controllers
         {
             try
             {
-                return db.rap_resource
-                    .Where(r => r.resourceOwner.Contains(ownerName))
-                    .ToList();
+                var fetched_resources = db.rap_resource
+                    .Where(r =>
+                        ((r.resourceOwner == ownerName) && !r.toDelete))
+                        .ToList();
+                return fetched_resources;
             }
             catch (Exception ex)
             {
