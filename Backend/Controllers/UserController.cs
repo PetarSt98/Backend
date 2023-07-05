@@ -109,6 +109,7 @@ namespace Backend.Controllers
     {
         public string UserName { get; set; }
         public string DeviceName { get; set; }
+        public string AddDeviceOrUser { get; set; }
     }
 
     [Route("api/add_pop_up")]
@@ -130,10 +131,17 @@ namespace Backend.Controllers
         public async Task<ActionResult<string>> CreateUser([FromBody] User user)
         {
             try
-            {   
+            {
                 if (user.DeviceName == "")
                 {
-                    return $"Device name is empty!";
+                    if (user.AddDeviceOrUser == "device")
+                    {
+                        return "Device name is empty!";
+                    }
+                    else if (user.AddDeviceOrUser == "user")
+                    {
+                        return "User name is empty";
+                    }
                 }
 
                 user.DeviceName = user.DeviceName.ToUpper();
@@ -150,7 +158,14 @@ namespace Backend.Controllers
                     var userList = okObjectResult.Value as IEnumerable<string>;
                     if (userList.Contains(user.UserName))
                     {
-                        return "Device already exists!";
+                        if (user.AddDeviceOrUser == "device")
+                        {
+                            return "Device already exists!";
+                        }
+                        else if (user.AddDeviceOrUser == "user")
+                        {
+                            return "User already exists!";
+                        }
                     }
                 }
 
@@ -203,14 +218,36 @@ namespace Backend.Controllers
                     db.rap_resource.Add(newRapResource);
                     db.SaveChanges();
                 }
+                
             }
             catch (Exception ex)
             {
                 Console.WriteLine(ex.Message);
-                return "Unsuccessful update or device does not exists!";
+                if (user.AddDeviceOrUser == "device")
+                {
+                    return "Unsuccessful update or device does not exists!";
+                }
+                else if (user.AddDeviceOrUser == "user")
+                {
+                    return "Unsuccessful update or device does not exists!";
+                }
+                else
+                {
+                    return "Unsuccessful update";
+                }
             }
-
-            return "Successfully added the device!";
+            if (user.AddDeviceOrUser == "device")
+            {
+                return "Successfully added the device!";
+            }
+            else if (user.AddDeviceOrUser == "user")
+            {
+                return "Successfully added the user!";
+            }
+            else
+            {
+                return "Successful update";
+            }
         }
 
 
@@ -320,6 +357,44 @@ namespace Backend.Controllers
 
             return Ok(new HashSet<string>(devices));
         }
+
+        public class DeviceCheckRequest
+        {
+            public string UserName { get; set; }
+            public List<string> DeviceNames { get; set; }
+        }
+
+        [Authorize]
+        [HttpPost]
+        [Route("check")]
+        [SwaggerOperation("Check all devices of the user.")]
+        public async Task<ActionResult<IEnumerable<bool>>> CheckDevices([FromBody] DeviceCheckRequest request)
+        {
+            List<bool> devices = new List<bool>();
+            string userName = request.UserName;
+            try
+            {
+                using (var db = new RapContext())
+                {
+                    var rap_resources = GetRapByRAPName(db, AddRAPToUser(userName)).ToList();
+                    rap_resources.AddRange(GetRapByResourceOwner(db, AddDomainToRapOwner(userName)).ToList());
+                    devices.AddRange(rap_resources.Where(r => !r.toDelete).Select(r => r.synchronized).ToList());
+                }
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex}");
+            }
+
+            return Ok(devices);
+
+
+            //List<bool> statuses = new List<bool>(new bool[request.DeviceNames.Count]);
+
+            //return Ok(statuses);
+        }
+
+
 
         [Authorize]
         [HttpDelete]
