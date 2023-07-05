@@ -8,6 +8,9 @@ COPY Backend/*.csproj ./Backend/
 COPY SynchronizerLibrary/*.csproj ./SynchronizerLibrary/
 RUN dotnet restore
 
+# Copy PowerShell script
+COPY PowerShellScripts/SOAPNetworkService.ps1 ./Backend/
+
 # Copy everything else and build
 COPY . .
 WORKDIR /app/Backend
@@ -17,5 +20,6 @@ RUN dotnet publish -c Release -o out
 FROM mcr.microsoft.com/dotnet/aspnet:6.0 AS runtime
 WORKDIR /app
 COPY --from=build /app/Backend/out .
+COPY --from=build /app/Backend/SOAPNetworkService.ps1 .   # Copy the PowerShell script to the runtime image
 EXPOSE 8080
 ENTRYPOINT ["dotnet", "Backend.dll"]
