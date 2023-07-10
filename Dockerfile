@@ -18,6 +18,11 @@ RUN dotnet publish -c Release -o out
 
 # Stage 2: Set up a production-ready .NET runtime environment
 FROM mcr.microsoft.com/dotnet/aspnet:6.0 AS runtime
+
+# Install PowerShell
+RUN apt-get update && \
+    apt-get install -y powershell
+
 WORKDIR /app
 COPY --from=build /app/Backend/out .
 COPY --from=build /app/Backend/SOAPNetworkService.ps1 .   # Copy the PowerShell script to the runtime image

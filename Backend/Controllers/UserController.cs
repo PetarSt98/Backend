@@ -255,7 +255,9 @@ namespace Backend.Controllers
         {
             try
             {
-                string scriptPath = $@"{Directory.GetParent(Environment.CurrentDirectory).FullName}\PowerShellScripts\SOAPNetworkService.ps1";
+                //string scriptPath = $@"{Directory.GetParent(Environment.CurrentDirectory).FullName}\PowerShellScripts\SOAPNetworkService.ps1";
+                string scriptPath = Path.Combine(Environment.CurrentDirectory, "SOAPNetworkService.ps1");
+
                 ProcessStartInfo startInfo = new ProcessStartInfo
                 {
                     FileName = "powershell.exe",
