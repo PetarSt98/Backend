@@ -14,7 +14,7 @@ COPY PowerShellScripts/SOAPNetworkService.ps1 ./Backend/
 # Copy everything else and build
 COPY . .
 WORKDIR /app/Backend
-RUN dotnet publish -c Release -o out
+RUN dotnet publish Backend.csproj -c Release -o out
 
 # Stage 2: Set up a production-ready .NET runtime environment
 FROM mcr.microsoft.com/dotnet/aspnet:6.0 AS runtime
