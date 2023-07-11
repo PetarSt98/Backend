@@ -9,8 +9,8 @@ COPY SynchronizerLibrary/*.csproj ./SynchronizerLibrary/
 RUN dotnet restore
 
 # Copy PowerShell script
+COPY PowerShellScripts/SOAPNetworkService.ps1 ./PowerShellScripts/
 COPY PowerShellScripts/SOAPNetworkService.ps1 ./Backend/
-
 # Copy everything else and build
 COPY . .
 WORKDIR /app/Backend
@@ -33,6 +33,6 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY --from=build /app/Backend/out .
-# COPY --from=build /app/Backend/SOAPNetworkService.ps1 .   # Copy the PowerShell script to the runtime image
+COPY --from=build /app/Backend/SOAPNetworkService.ps1 .
 EXPOSE 8080
 ENTRYPOINT ["dotnet", "Backend.dll"]

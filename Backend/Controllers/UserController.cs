@@ -112,6 +112,7 @@ namespace Backend.Controllers
         public string AddDeviceOrUser { get; set; }
     }
 
+
     [Route("api/add_pop_up")]
     [ApiController]
     public class UserController : ControllerBase
@@ -249,7 +250,6 @@ namespace Backend.Controllers
                 return "Successful update";
             }
         }
-
         //[Authorize]s
         [HttpPost("test")]
         [SwaggerOperation("Add a new user to the device.")]
@@ -295,6 +295,15 @@ namespace Backend.Controllers
             return "ok";
 
         }
+        //[Authorize]s
+        [HttpPost("test4")]
+        [SwaggerOperation("Add a new user to the device.")]
+        public async Task<ActionResult<string>> TestPath4([FromBody] User user)
+        {
+            return Directory.GetCurrentDirectory();
+
+        }
+
 
         public static Dictionary<string, string> ExecutePowerShellSOAPScript(string computerName)
         {
