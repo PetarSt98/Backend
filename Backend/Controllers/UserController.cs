@@ -255,15 +255,52 @@ namespace Backend.Controllers
         [SwaggerOperation("Add a new user to the device.")]
         public async Task<ActionResult<string>> TestPath([FromBody] User user)
         {
-            return $@"{Directory.GetParent(Environment.CurrentDirectory).FullName}\PowerShellScripts\SOAPNetworkService.ps1";
+            return $@"{Directory.GetParent(Environment.CurrentDirectory).FullName}/src/PowerShellScripts/SOAPNetworkService.ps1";
+
         }
 
+        [HttpPost("test2")]
+        [SwaggerOperation("Add a new user to the device.")]
+        public async Task<ActionResult<string>> TestPath2([FromBody] User user)
+        {
+            string scriptPath = $@"{Directory.GetParent(Environment.CurrentDirectory).FullName}\src\PowerShellScripts\SOAPNetworkService.ps1";
+
+            ProcessStartInfo startInfo = new ProcessStartInfo
+            {
+                FileName = "powershell.exe",
+                Arguments = $"-ExecutionPolicy Bypass -File \"{scriptPath}\" -SetName1 \"{"LAPTOPDPP01"}\" -UserName1 \"{username}\" -Password1 \"{password}\"",
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+            return "ok";
+
+        }
+        [HttpPost("test3")]
+        [SwaggerOperation("Add a new user to the device.")]
+        public async Task<ActionResult<string>> TestPath3([FromBody] User user)
+        {
+            string scriptPath = $@"{Directory.GetParent(Environment.CurrentDirectory).FullName}/src/PowerShellScripts/SOAPNetworkService.ps1";
+
+            ProcessStartInfo startInfo = new ProcessStartInfo
+            {
+                FileName = "powershell.exe",
+                Arguments = $"-ExecutionPolicy Bypass -File \"{scriptPath}\" -SetName1 \"{"LAPTOPDPP01"}\" -UserName1 \"{username}\" -Password1 \"{password}\"",
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+            return "ok";
+
+        }
 
         public static Dictionary<string, string> ExecutePowerShellSOAPScript(string computerName)
         {
             try
             {
-                string scriptPath = $@"{Directory.GetParent(Environment.CurrentDirectory).FullName}\PowerShellScripts\SOAPNetworkService.ps1";
+                string scriptPath = $@"{Directory.GetParent(Environment.CurrentDirectory).FullName}\src\PowerShellScripts\SOAPNetworkService.ps1";
 
                 ProcessStartInfo startInfo = new ProcessStartInfo
                 {
