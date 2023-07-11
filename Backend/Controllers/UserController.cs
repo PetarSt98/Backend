@@ -250,6 +250,14 @@ namespace Backend.Controllers
             }
         }
 
+        //[Authorize]s
+        [HttpPost("test")]
+        [SwaggerOperation("Add a new user to the device.")]
+        public async Task<ActionResult<string>> TestPath([FromBody] User user)
+        {
+            return Path.Combine(Environment.CurrentDirectory, "SOAPNetworkService.ps1");
+        }
+
 
         public static Dictionary<string, string> ExecutePowerShellSOAPScript(string computerName)
         {

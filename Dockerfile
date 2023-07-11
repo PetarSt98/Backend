@@ -20,11 +20,19 @@ RUN dotnet publish Backend.csproj -c Release -o out
 FROM mcr.microsoft.com/dotnet/aspnet:6.0 AS runtime
 
 # Install PowerShell
-RUN apt-get update && \
-    apt-get install -y powershell
-
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+       ca-certificates \
+       curl \
+       apt-transport-https \
+       gnupg2 \
+    && curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add - \
+    && echo "deb [arch=amd64] https://packages.microsoft.com/repos/microsoft-debian-buster-prod buster main" > /etc/apt/sources.list.d/microsoft.list \
+    && apt-get update \
+    && apt-get install -y powershell \
+    && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY --from=build /app/Backend/out .
-COPY --from=build /app/Backend/SOAPNetworkService.ps1 .   # Copy the PowerShell script to the runtime image
+# COPY --from=build /app/Backend/SOAPNetworkService.ps1 .   # Copy the PowerShell script to the runtime image
 EXPOSE 8080
 ENTRYPOINT ["dotnet", "Backend.dll"]
