@@ -19,6 +19,9 @@ RUN dotnet publish Backend.csproj -c Release -o out
 # Stage 2: Set up a production-ready .NET runtime environment
 FROM mcr.microsoft.com/dotnet/aspnet:6.0 AS runtime
 
+# Create non-root user
+RUN adduser --disabled-password --gecos '' appuser
+
 # Install PowerShell
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
@@ -34,5 +37,14 @@ RUN apt-get update \
 WORKDIR /app
 COPY --from=build /app/Backend/out .
 COPY --from=build /app/Backend/SOAPNetworkService.ps1 .
+
+# Switch to non-root user
+USER appuser
+
+# Expose the port ASP.NET Core is running on
 EXPOSE 8080
+
+# Set ASP.NET Core URLS
+ENV ASPNETCORE_URLS=http://*:8080
+
 ENTRYPOINT ["dotnet", "Backend.dll"]

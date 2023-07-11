@@ -250,66 +250,13 @@ namespace Backend.Controllers
                 return "Successful update";
             }
         }
-        //[Authorize]s
-        [HttpPost("test")]
-        [SwaggerOperation("Add a new user to the device.")]
-        public async Task<ActionResult<string>> TestPath([FromBody] User user)
-        {
-            return $@"{Directory.GetParent(Environment.CurrentDirectory).FullName}/src/PowerShellScripts/SOAPNetworkService.ps1";
-
-        }
-
-        [HttpPost("test2")]
-        [SwaggerOperation("Add a new user to the device.")]
-        public async Task<ActionResult<string>> TestPath2([FromBody] User user)
-        {
-            string scriptPath = $@"{Directory.GetParent(Environment.CurrentDirectory).FullName}\src\PowerShellScripts\SOAPNetworkService.ps1";
-
-            ProcessStartInfo startInfo = new ProcessStartInfo
-            {
-                FileName = "powershell.exe",
-                Arguments = $"-ExecutionPolicy Bypass -File \"{scriptPath}\" -SetName1 \"{"LAPTOPDPP01"}\" -UserName1 \"{username}\" -Password1 \"{password}\"",
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            };
-            return "ok";
-
-        }
-        [HttpPost("test3")]
-        [SwaggerOperation("Add a new user to the device.")]
-        public async Task<ActionResult<string>> TestPath3([FromBody] User user)
-        {
-            string scriptPath = $@"{Directory.GetParent(Environment.CurrentDirectory).FullName}/src/PowerShellScripts/SOAPNetworkService.ps1";
-
-            ProcessStartInfo startInfo = new ProcessStartInfo
-            {
-                FileName = "powershell.exe",
-                Arguments = $"-ExecutionPolicy Bypass -File \"{scriptPath}\" -SetName1 \"{"LAPTOPDPP01"}\" -UserName1 \"{username}\" -Password1 \"{password}\"",
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            };
-            return "ok";
-
-        }
-        //[Authorize]s
-        [HttpPost("test4")]
-        [SwaggerOperation("Add a new user to the device.")]
-        public async Task<ActionResult<string>> TestPath4([FromBody] User user)
-        {
-            return Directory.GetCurrentDirectory();
-
-        }
 
 
         public static Dictionary<string, string> ExecutePowerShellSOAPScript(string computerName)
         {
             try
             {
-                string scriptPath = $@"{Directory.GetParent(Environment.CurrentDirectory).FullName}\src\PowerShellScripts\SOAPNetworkService.ps1";
+                string scriptPath = $@"{Directory.GetCurrentDirectory()}\SOAPNetworkService.ps1";
 
                 ProcessStartInfo startInfo = new ProcessStartInfo
                 {
