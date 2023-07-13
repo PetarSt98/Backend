@@ -34,6 +34,5 @@ COPY SOAPServicesApi/bin/Release/SOAPServicesApi.exe ./Resources/SOAPServicesApi
 
 # Expose port 8080 and set ASP.NET Core to listen on port 8080
 EXPOSE 8080
-ENV ASPNETCORE_URLS=http://*:8080
 
 ENTRYPOINT ["dotnet", "Backend.dll"]
