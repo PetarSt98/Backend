@@ -6,8 +6,8 @@ WORKDIR /app
 COPY *.sln .
 
 # Copy csproj files and restore
-COPY Backend/Backend.csproj ./Backend/
-COPY SynchronizerLibrary/SynchronizerLibrary.csproj ./SynchronizerLibrary/
+COPY Backend/*.csproj ./Backend/
+COPY SynchronizerLibrary/*.csproj ./SynchronizerLibrary/
 RUN dotnet restore
 
 # Copy everything else and build
@@ -35,5 +35,7 @@ COPY --from=build /app/out .
 COPY SOAPServicesApi/bin/Release/SOAPServicesApi.exe ./Resources/SOAPServicesApi.exe
 
 # Expose port 8080 and set ASP.NET Core to listen on port 8080
+ENV ASPNETCORE_URLS=http://+:8080
 EXPOSE 8080
+
 ENTRYPOINT ["dotnet", "Backend.dll"]
