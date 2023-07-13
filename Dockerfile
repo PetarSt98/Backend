@@ -25,10 +25,8 @@ RUN useradd -m myuser
 WORKDIR /app
 COPY --from=build /app/out .
 
-# Copy the exe from the SOAPServicesApi project to the Docker container
-COPY SOAPServicesApi/bin/Release/SOAPServicesApi.exe ./Resources/SOAPServicesApi.exe
-
 # Expose port 8080 and set ASP.NET Core to listen on port 8080
+ENV ASPNETCORE_URLS=http://+:8080  # Set the environment variable to listen on all IPs
 EXPOSE 8080
 
 # Set the user for running the application
