@@ -61,7 +61,7 @@ namespace Backend
                 options.AddPolicy("CorsPolicy", builder =>
                     builder.WithOrigins(
                         "http://localhost:3000",
-                        "https://rds-front-rds-frontend.app.cern.ch"
+                        "https://remote-desktop-gateway.app.cern.ch"
                         ) 
                     .AllowAnyMethod()
                     .AllowAnyHeader()
