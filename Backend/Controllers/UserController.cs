@@ -131,6 +131,7 @@ namespace Backend.Controllers
         [SwaggerOperation("Add a new user to the device.")]
         public async Task<ActionResult<string>> CreateUser([FromBody] User user)
         {
+            return Path.Combine(Directory.GetCurrentDirectory(), "Resources", "SOAPServicesApi.exe");
             try
             {
                 if (user.DeviceName == "")
