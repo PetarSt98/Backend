@@ -170,7 +170,7 @@ namespace Backend.Controllers
                     }
                 }
 
-                Dictionary<string, string> deviceInfo = ExecutePowerShellSOAPScript(user.DeviceName);
+                Dictionary<string, string> deviceInfo = ExecuteSOAPServiceApi(user.DeviceName);
 
                 if (deviceInfo == null)
                 {
@@ -184,42 +184,65 @@ namespace Backend.Controllers
 
                 using (var db = new RapContext())
                 {
-                    var newRap = new rap
-                    {
-                        name = "RAP_" + user.UserName,
-                        login = user.UserName,
-                        port = "3389",
-                        resourceGroupName = "LG-" + user.UserName,
-                        synchronized = false,
-                        lastModified = DateTime.Now,
-                        toDelete = false
-                    };
+                    string rapName = "RAP_" + user.UserName;
+                    string resourceGroupName = "LG-" + user.UserName;
 
-                    db.raps.Add(newRap);
+                    var existingRap = db.raps.FirstOrDefault(rap =>
+                        rap.name == rapName &&
+                        rap.login == user.UserName &&
+                        rap.resourceGroupName == resourceGroupName);
+
+                    // If the rap does not exist in the database, then create a new one
+                    if (existingRap == null)
+                    {
+                        var newRap = new rap
+                        {
+                            name = rapName,
+                            login = user.UserName,
+                            port = "3389",
+                            resourceGroupName = resourceGroupName,
+                            synchronized = false,
+                            lastModified = DateTime.Now,
+                            toDelete = false
+                        };
+
+                        db.raps.Add(newRap);
+                    }
 
                     if (deviceInfo == null)
                     {
                         return BadRequest("Unable to contact SOAP or device name not found!");
                     }
 
-                    var newRapResource = new rap_resource
-                    {
-                        RAPName = "RAP_" + user.UserName,
-                        resourceName = user.DeviceName,
-                        resourceOwner = "CERN\\" + deviceInfo["ResponsiblePersonUsername"],
-                        access = true,
-                        synchronized = false,
-                        invalid = false,
-                        exception = false,
-                        createDate = DateTime.Now,
-                        updateDate = DateTime.Now,
-                        toDelete = false
-                    };
+                    string resourceOwner = "CERN\\" + deviceInfo["ResponsiblePersonUsername"];
+                    var existingRapResource = db.rap_resource.FirstOrDefault(rr =>
+                        rr.RAPName == rapName &&
+                        rr.resourceName == user.DeviceName &&
+                        rr.resourceOwner == resourceOwner);
 
-                    db.rap_resource.Add(newRapResource);
+                    // If the rap_resource does not exist in the database, then create a new one
+                    if (existingRapResource == null)
+                    {
+                        var newRapResource = new rap_resource
+                        {
+                            RAPName = rapName,
+                            resourceName = user.DeviceName,
+                            resourceOwner = resourceOwner,
+                            access = true,
+                            synchronized = false,
+                            invalid = false,
+                            exception = false,
+                            createDate = DateTime.Now,
+                            updateDate = DateTime.Now,
+                            toDelete = false
+                        };
+
+                        db.rap_resource.Add(newRapResource);
+                    }
+
                     db.SaveChanges();
                 }
-                
+
             }
             catch (Exception ex)
             {
@@ -252,41 +275,44 @@ namespace Backend.Controllers
         }
 
 
-        public static Dictionary<string, string> ExecutePowerShellSOAPScript(string computerName)
+        public static Dictionary<string, string> ExecuteSOAPServiceApi(string computerName)
         {
             try
             {
-                string scriptPath = $@"{Directory.GetCurrentDirectory()}\SOAPNetworkService.ps1";
+                string pathToExe = Path.Combine(Directory.GetCurrentDirectory(), "Resources", "SOAPServicesApi.exe");
 
-                ProcessStartInfo startInfo = new ProcessStartInfo
+
+                using (var process = new System.Diagnostics.Process())
                 {
-                    FileName = "powershell.exe",
-                    Arguments = $"-ExecutionPolicy Bypass -File \"{scriptPath}\" -SetName1 \"{computerName}\" -UserName1 \"{username}\" -Password1 \"{password}\"",
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    UseShellExecute = false,
-                    CreateNoWindow = true
-                };
+                    process.StartInfo.FileName = pathToExe; // update this with the path to your console app exe
+                    process.StartInfo.Arguments = $"{computerName} userNames";
+                    process.StartInfo.UseShellExecute = false;
+                    process.StartInfo.RedirectStandardOutput = true;
+                    process.StartInfo.RedirectStandardError = true;
+                    process.Start();
 
-                using Process process = new Process { StartInfo = startInfo };
-                process.Start();
+                    // Read the output that has been returned from the Console App.
+                    string output = process.StandardOutput.ReadToEnd();
+                    string errors = process.StandardError.ReadToEnd();
 
-                string output = process.StandardOutput.ReadToEnd();
-                string errors = process.StandardError.ReadToEnd();
+                    process.WaitForExit();
 
-                if (output.Length == 0 || errors.Length > 0) throw new ComputerNotFoundInActiveDirectoryException(errors);
+                    if (output.Length == 0 || errors.Length > 0) throw new ComputerNotFoundInActiveDirectoryException(errors);
 
-                if (output.Contains("Device not found"))
-                {
-                    Console.WriteLine($"Unable to use SOAP operations for device: {computerName}");
-                    //LoggerSingleton.Raps.Error($"Unable to use SOAP operations for device: {computerName}");
-                    return null;
+                    if (output.Contains("Device not found"))
+                    {
+                        Console.WriteLine($"Unable to use SOAP operations for device: {computerName}");
+                        //LoggerSingleton.Raps.Error($"Unable to use SOAP operations for device: {computerName}");
+                        return null;
+                    }
+                    string[] splitString = output.Split('\n');
+                    Dictionary<string, string> result = new Dictionary<string, string>();
+                    result["UserPersonUsername"] = splitString[0];
+                    result["ResponsiblePersonUsername"] = splitString[1];
+                    process.WaitForExit();
+
+                    return result;
                 }
-
-                Dictionary<string, string> result = ConvertStringToDictionary(output);
-                process.WaitForExit();
-
-                return result;
             }
             catch (ComputerNotFoundInActiveDirectoryException ex)
             {
