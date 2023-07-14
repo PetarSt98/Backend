@@ -1,35 +1,23 @@
-# Stage 1: Build the .NET application
+# Stage 1: Set up a .NET 6.0 build environment for Backend and SynchronizerLibrary
 FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build
 WORKDIR /app
 
-# Copy solution file
+# Copy csproj and restore dependencies
 COPY *.sln .
-
-# Copy csproj files and restore
-COPY Backend/Backend.csproj ./Backend/
-COPY SynchronizerLibrary/SynchronizerLibrary.csproj ./SynchronizerLibrary/
+COPY Backend/*.csproj ./Backend/
+COPY SynchronizerLibrary/*.csproj ./SynchronizerLibrary/
 RUN dotnet restore
 
 # Copy everything else and build
-COPY Backend/. ./Backend/
-COPY SynchronizerLibrary/. ./SynchronizerLibrary/
+COPY . .
+WORKDIR /app/Backend
+RUN dotnet publish Backend.csproj -c Release -o out  # specify the project file here
 
-RUN dotnet publish -c Release -o out
-
-# Stage 2: Run the .NET application
+# Stage 2: Set up a production-ready .NET 6.0 runtime environment
 FROM mcr.microsoft.com/dotnet/aspnet:6.0 AS runtime
-
-# Create a non-root user
-RUN useradd -m myuser
-
 WORKDIR /app
-COPY --from=build /app/out .
-
-# Expose port 8080 and set ASP.NET Core to listen on port 8080
-ENV ASPNETCORE_URLS=http://+:8080  # Set the environment variable to listen on all IPs
+COPY --from=build /app/Backend/out .
+COPY SOAPServicesApi/bin/Release/SOAPServicesApi.exe .  
 EXPOSE 8080
-
-# Set the user for running the application
-USER myuser
-
+ENV ASPNETCORE_URLS=http://+:8080
 ENTRYPOINT ["dotnet", "Backend.dll"]
