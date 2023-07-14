@@ -13,19 +13,17 @@ COPY . .
 WORKDIR /app/Backend
 RUN dotnet publish Backend.csproj -c Release -o out  # specify the project file here
 
-# Stage 1.5: Set up a Python environment and install dependencies
-FROM python:2.7 AS python-build
-RUN pip install suds
-
 # Stage 2: Set up a production-ready .NET 6.0 runtime environment
 # Include Python 2.7 runtime along with .NET
 FROM mcr.microsoft.com/dotnet/aspnet:6.0 AS runtime
-RUN apt-get update && apt-get install -y python2.7
+RUN apt-get update && apt-get install -y python2.7 python-pip
 WORKDIR /app
 COPY --from=build /app/Backend/out .
 
+# Install Python dependencies
+RUN pip install suds
+
 # Copy your Python script
-COPY --from=python-build /usr/local/lib/python2.7/site-packages/ /usr/local/lib/python2.7/site-packages/
 COPY PowerShellScripts/SOAPNetworkService.py .
 
 EXPOSE 8080
