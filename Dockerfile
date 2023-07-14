@@ -14,10 +14,15 @@ WORKDIR /app/Backend
 RUN dotnet publish Backend.csproj -c Release -o out  # specify the project file here
 
 # Stage 2: Set up a production-ready .NET 6.0 runtime environment
+# Include Python 2.7 runtime along with .NET
 FROM mcr.microsoft.com/dotnet/aspnet:6.0 AS runtime
+RUN apt-get update && apt-get install -y python2.7
 WORKDIR /app
 COPY --from=build /app/Backend/out .
-COPY SOAPServicesApi/bin/Release/SOAPServicesApi.exe .  
+
+# Copy your Python script
+COPY PowerShellScripts/SOAPNetworkService.py .
+
 EXPOSE 8080
 ENV ASPNETCORE_URLS=http://+:8080
 ENTRYPOINT ["dotnet", "Backend.dll"]

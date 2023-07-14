@@ -132,30 +132,7 @@ namespace Backend.Controllers
         [SwaggerOperation("Add a new user to the device.")]
         public async Task<ActionResult<string>> CreateUser([FromBody] User user)
         {
-            string outputString = "";
-            using (PrincipalContext ctx = new PrincipalContext(ContextType.Domain))
-            {
-                UserPrincipal criteria = new UserPrincipal(ctx);
-
-                    criteria.EmailAddress = "petar.stojkovic@cern.ch";
-
-                    using (PrincipalSearcher searcher = new PrincipalSearcher(criteria))
-                    {
-                        UserPrincipal result = (UserPrincipal)searcher.FindOne();
-
-                        if (result != null)
-                        {
-                            outputString += $"{result.SamAccountName}\n";
-                        }
-                        else
-                        {
-                            outputString += $"User not found\n";
-                        }
-                    }
-            }
-            return outputString;
-
-                try
+            try
             {
                 if (user.DeviceName == "")
                 {
@@ -308,25 +285,24 @@ namespace Backend.Controllers
         {
             try
             {
-                string pathToExe = Path.Combine(Directory.GetCurrentDirectory(), "SOAPServicesApi.exe");
-
+                string pathToScript = Path.Combine(Directory.GetCurrentDirectory(), "SOAPNetworkService.py"); // replace this with the path to your Python script
 
                 using (var process = new System.Diagnostics.Process())
                 {
-                    process.StartInfo.FileName = pathToExe; // update this with the path to your console app exe
-                    process.StartInfo.Arguments = $"{computerName} userNames";
+                    process.StartInfo.FileName = "python2.7"; // or "python2.7" if you specifically need to run the script with Python 2.7
+                    process.StartInfo.Arguments = $"{pathToScript} {computerName} {username} {password}";
                     process.StartInfo.UseShellExecute = false;
                     process.StartInfo.RedirectStandardOutput = true;
                     process.StartInfo.RedirectStandardError = true;
                     process.Start();
 
-                    // Read the output that has been returned from the Console App.
+                    // Read the output that has been returned from the Python script.
                     string output = process.StandardOutput.ReadToEnd();
                     string errors = process.StandardError.ReadToEnd();
 
                     process.WaitForExit();
 
-                    if (output.Length == 0 || errors.Length > 0) throw new ComputerNotFoundInActiveDirectoryException(errors);
+                    if (output.Length == 0 || errors.Length > 0) throw new Exception(errors);
 
                     if (output.Contains("Device not found"))
                     {
@@ -343,19 +319,13 @@ namespace Backend.Controllers
                     return result;
                 }
             }
-            catch (ComputerNotFoundInActiveDirectoryException ex)
-            {
-                Console.WriteLine($"{ex.Message} Unable to use SOAP operations for device: {computerName}");
-                //LoggerSingleton.Raps.Error($"{ex.Message} Unable to use SOAP operations for device: {computerName}");
-                return null;
-            }
             catch (Exception ex)
             {
                 Console.WriteLine(ex.ToString());
                 return new Dictionary<string, string>
-                {
-                    {"Error", $"{ex.Message}"}
-                };
+        {
+            {"Error", $"{ex.Message}"}
+        };
             }
         }
 
