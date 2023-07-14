@@ -279,7 +279,7 @@ namespace Backend.Controllers
         {
             try
             {
-                string pathToExe = Path.Combine(Directory.GetCurrentDirectory(), "Resources", "SOAPServicesApi.exe");
+                string pathToExe = Path.Combine(Directory.GetCurrentDirectory(), "SOAPServicesApi.exe");
 
 
                 using (var process = new System.Diagnostics.Process())
