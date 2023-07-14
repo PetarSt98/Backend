@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Security.Authentication;
+using System.DirectoryServices.AccountManagement;
 
 namespace Backend.Controllers
 {
@@ -131,7 +132,30 @@ namespace Backend.Controllers
         [SwaggerOperation("Add a new user to the device.")]
         public async Task<ActionResult<string>> CreateUser([FromBody] User user)
         {
-            try
+            string outputString = "";
+            using (PrincipalContext ctx = new PrincipalContext(ContextType.Domain))
+            {
+                UserPrincipal criteria = new UserPrincipal(ctx);
+
+                    criteria.EmailAddress = "petar.stojkovic@cern.ch";
+
+                    using (PrincipalSearcher searcher = new PrincipalSearcher(criteria))
+                    {
+                        UserPrincipal result = (UserPrincipal)searcher.FindOne();
+
+                        if (result != null)
+                        {
+                            outputString += $"{result.SamAccountName}\n";
+                        }
+                        else
+                        {
+                            outputString += $"User not found\n";
+                        }
+                    }
+            }
+            return outputString;
+
+                try
             {
                 if (user.DeviceName == "")
                 {
