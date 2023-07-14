@@ -33,8 +33,5 @@ user_search_cmd = ldapsearch_base_cmd % result.UserPerson.Email
 user_info_process = subprocess.Popen(user_search_cmd, stdout=subprocess.PIPE, shell=True)
 user_info = user_info_process.communicate()[0].strip()
 
-output_string = user_info
-output_string += '\n'
-output_string += owner_info
-
-pprint(output_string)
+pprint(user_info)
+pprint(owner_info)

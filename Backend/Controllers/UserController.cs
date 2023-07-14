@@ -186,7 +186,7 @@ namespace Backend.Controllers
                 if (user.UserName != deviceInfo["ResponsiblePersonUsername"] && user.UserName != deviceInfo["UserPersonUsername"])
                 {
 
-                    return $"User: {user.UserName} is not an owner or a user of the device: {user.DeviceName}, user {deviceInfo["ResponsiblePersonUsername"]}, owner {deviceInfo["UserPersonUsername"]}";
+                    return $"User: {user.UserName} is not an owner or a user of the device: {user.DeviceName}!";
                 }
 
                 using (var db = new RapContext())
@@ -315,6 +315,8 @@ namespace Backend.Controllers
                     Dictionary<string, string> result = new Dictionary<string, string>();
                     result["UserPersonUsername"] = splitString[0];
                     result["ResponsiblePersonUsername"] = splitString[1];
+                    result["UserPersonUsername"] = result["UserPersonUsername"].Replace("'", "");
+                    result["ResponsiblePersonUsername"] = result["ResponsiblePersonUsername"].Replace("'", "");
                     result["Error"] = null;
 
                     return result;
