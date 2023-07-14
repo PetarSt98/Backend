@@ -197,7 +197,8 @@ namespace Backend.Controllers
                     var existingRap = db.raps.FirstOrDefault(rap =>
                         rap.name == rapName &&
                         rap.login == user.UserName &&
-                        rap.resourceGroupName == resourceGroupName);
+                        rap.resourceGroupName == resourceGroupName &&
+                        rap.toDelete == false);
 
                     // If the rap does not exist in the database, then create a new one
                     if (existingRap == null)
@@ -225,7 +226,8 @@ namespace Backend.Controllers
                     var existingRapResource = db.rap_resource.FirstOrDefault(rr =>
                         rr.RAPName == rapName &&
                         rr.resourceName == user.DeviceName &&
-                        rr.resourceOwner == resourceOwner);
+                        rr.resourceOwner == resourceOwner &&
+                        rr.toDelete == false);
 
                     // If the rap_resource does not exist in the database, then create a new one
                     if (existingRapResource == null)
@@ -245,6 +247,21 @@ namespace Backend.Controllers
                         };
 
                         db.rap_resource.Add(newRapResource);
+                    }
+                    else 
+                    {
+                        if (user.AddDeviceOrUser == "device")
+                        {
+                            return "Device already exists!";
+                        }
+                        else if (user.AddDeviceOrUser == "user")
+                        {
+                            return "User already exists!";
+                        }
+                        else
+                        {
+                            return "Unsuccessful update";
+                        }
                     }
 
                     db.SaveChanges();
@@ -329,7 +346,7 @@ namespace Backend.Controllers
                 result["UserPersonUsername"] = null;
                 result["ResponsiblePersonUsername"] = null;
                 result["Error"] = null;
-                if (result["Error"].Contains("not found in database"))
+                if (ex.Message.Contains("not found in database"))
                 {
                     result["Error"] = $"Device: {computerName} does not exist!";
                 }
