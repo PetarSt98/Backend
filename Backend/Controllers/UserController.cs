@@ -126,11 +126,12 @@ namespace Backend.Controllers
             _userSearcher = userService;
         }
 
-        [Authorize]
+        //[Authorize]
         [HttpPost("add")]
         [SwaggerOperation("Add a new user to the device.")]
         public async Task<ActionResult<string>> CreateUser([FromBody] User user)
         {
+            return Path.Combine(Directory.GetCurrentDirectory();
             try
             {
                 if (user.DeviceName == "")
