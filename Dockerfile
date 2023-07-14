@@ -16,7 +16,7 @@ RUN dotnet publish Backend.csproj -c Release -o out  # specify the project file 
 # Stage 2: Set up a production-ready .NET 6.0 runtime environment
 # Include Python 2.7 runtime along with .NET
 FROM mcr.microsoft.com/dotnet/aspnet:6.0 AS runtime
-RUN apt-get update && apt-get install -y python2.7 curl
+RUN apt-get update && apt-get install -y python2.7 curl ldap-utils
 WORKDIR /app
 COPY --from=build /app/Backend/out .
 
