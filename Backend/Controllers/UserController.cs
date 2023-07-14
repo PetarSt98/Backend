@@ -131,7 +131,6 @@ namespace Backend.Controllers
         [SwaggerOperation("Add a new user to the device.")]
         public async Task<ActionResult<string>> CreateUser([FromBody] User user)
         {
-            return Path.Combine(Directory.GetCurrentDirectory());
             try
             {
                 if (user.DeviceName == "")
@@ -176,6 +175,11 @@ namespace Backend.Controllers
                 if (deviceInfo == null)
                 {
                     return $"Device: {user.DeviceName} does not exist!";
+                }
+
+                if (deviceInfo["Error"] != null)
+                {
+                    return deviceInfo["Error"];
                 }
 
                 if (user.UserName != deviceInfo["ResponsiblePersonUsername"] && user.UserName != deviceInfo["UserPersonUsername"])
@@ -310,7 +314,7 @@ namespace Backend.Controllers
                     Dictionary<string, string> result = new Dictionary<string, string>();
                     result["UserPersonUsername"] = splitString[0];
                     result["ResponsiblePersonUsername"] = splitString[1];
-                    process.WaitForExit();
+                    result["Error"] = null;
 
                     return result;
                 }
@@ -324,7 +328,10 @@ namespace Backend.Controllers
             catch (Exception ex)
             {
                 Console.WriteLine(ex.ToString());
-                return null;
+                return new Dictionary<string, string>
+                {
+                    {"Error", "Can not run SOAP Services"}
+                };
             }
         }
 
