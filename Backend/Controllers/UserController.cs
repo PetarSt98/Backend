@@ -325,10 +325,19 @@ namespace Backend.Controllers
             catch (Exception ex)
             {
                 Console.WriteLine(ex.ToString());
-                return new Dictionary<string, string>
-        {
-            {"Error", $"{ex.Message}"}
-        };
+                Dictionary<string, string> result = new Dictionary<string, string>();
+                result["UserPersonUsername"] = null;
+                result["ResponsiblePersonUsername"] = null;
+                result["Error"] = null;
+                if (result["Error"].Contains("not found in database"))
+                {
+                    result["Error"] = $"Device: {computerName} does not exist!";
+                }
+                else
+                {
+                    result["Error"] = ex.Message;
+                }
+                return result;
             }
         }
 
