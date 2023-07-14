@@ -185,7 +185,8 @@ namespace Backend.Controllers
 
                 if (user.UserName != deviceInfo["ResponsiblePersonUsername"] && user.UserName != deviceInfo["UserPersonUsername"])
                 {
-                    return $"User: {user.UserName} is not an owner or a user of the device: {user.DeviceName}";
+
+                    return $"User: {user.UserName} is not an owner or a user of the device: {user.DeviceName}, user {deviceInfo["ResponsiblePersonUsername"]}, owner {deviceInfo["UserPersonUsername"]}";
                 }
 
                 using (var db = new RapContext())
