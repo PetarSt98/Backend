@@ -330,7 +330,7 @@ namespace Backend.Controllers
                 Console.WriteLine(ex.ToString());
                 return new Dictionary<string, string>
                 {
-                    {"Error", "Can not run SOAP Services"}
+                    {"Error", $"{ex.Message}"}
                 };
             }
         }
