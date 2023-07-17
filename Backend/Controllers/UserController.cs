@@ -134,7 +134,7 @@ namespace Backend.Controllers
         {
             try
             {
-                if (user.DeviceName == "")
+                if (user.DeviceName == "" || user.UserName == "")
                 {
                     if (user.AddDeviceOrUser == "device")
                     {
