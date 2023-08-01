@@ -229,8 +229,13 @@ namespace Backend.Controllers
                         rr.resourceOwner == resourceOwner &&
                         rr.toDelete == false);
 
+                    var existingToDeleteRapResource = db.rap_resource.FirstOrDefault(rr =>
+                        rr.RAPName == rapName &&
+                        rr.resourceName == user.DeviceName &&
+                        rr.resourceOwner == resourceOwner &&
+                        rr.toDelete == true);
                     // If the rap_resource does not exist in the database, then create a new one
-                    if (existingRapResource == null)
+                    if (existingRapResource == null && existingToDeleteRapResource == null)
                     {
                         var newRapResource = new rap_resource
                         {
@@ -247,6 +252,10 @@ namespace Backend.Controllers
                         };
 
                         db.rap_resource.Add(newRapResource);
+                    }
+                    else if (existingToDeleteRapResource != null && existingRapResource == null)
+                    {
+                        existingToDeleteRapResource.toDelete = false;
                     }
                     else 
                     {
