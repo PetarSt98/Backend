@@ -333,17 +333,12 @@ namespace Backend.Controllers
 
                 using (var process = new Process())
                 {
-                    bool testFlag = true;
-                    if (!testFlag)
-                    {
-                        process.StartInfo.FileName = "python2.7";
-                        process.StartInfo.Arguments = $"{pathToScript} {computerName} {username} {password}";
-                        process.StartInfo.UseShellExecute = false;
-                        process.StartInfo.RedirectStandardOutput = true;
-                        process.StartInfo.RedirectStandardError = true;
-                        process.Start();
-
-                    }
+                    process.StartInfo.FileName = "python2.7";
+                    process.StartInfo.Arguments = $"{pathToScript} {computerName} {username} {password}";
+                    process.StartInfo.UseShellExecute = false;
+                    process.StartInfo.RedirectStandardOutput = true;
+                    process.StartInfo.RedirectStandardError = true;
+                    process.Start();
 
                     while (!process.StandardOutput.EndOfStream)
                     {
