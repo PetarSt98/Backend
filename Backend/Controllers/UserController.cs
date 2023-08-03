@@ -187,6 +187,8 @@ namespace Backend.Controllers
 
                 string responsiblePersonUsername = deviceInfo["ResponsiblePersonUsername"] as string;
                 string userPersonUsername = deviceInfo["UserPersonUsername"] as string;
+                Console.WriteLine(responsiblePersonUsername);
+                Console.WriteLine(userPersonUsername);
 
                 if (responsiblePersonUsername == null || userPersonUsername == null)
                 {
@@ -388,7 +390,7 @@ namespace Backend.Controllers
 
                     result["EGroupNames"] = eGroupNames;
                 }
-
+                result["Error"] = null;
                 return result;
             }
             catch (Exception ex)
