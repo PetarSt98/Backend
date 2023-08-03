@@ -35,3 +35,18 @@ user_info = user_info_process.communicate()[0].strip()
 
 pprint(user_info)
 pprint(owner_info)
+
+ldapsearch_groups_cmd = 'ldapsearch -z 0 -E pr=1000/noprompt -LLL -x -h "xldap.cern.ch" -b "DC=cern,DC=ch" "(&(objectClass=group)(cn=support-windows-servers))" member'
+
+group_members_process = subprocess.Popen(ldapsearch_groups_cmd, stdout=subprocess.PIPE, shell=True)
+group_members = group_members_process.communicate()[0].strip()
+
+print(group_members)
+
+# ldapsearch_groups_cmd = 'ldapsearch -z 0 -E pr=1000/noprompt -LLL -x -h "xldap.cern.ch" -b "OU=Users,OU=Organic Units,DC=cern,DC=ch" "(&(objectClass=user)(cn=%s))" memberOf'
+
+# user_groups_search_cmd = ldapsearch_groups_cmd % "support-windows-servers"
+# user_groups_process = subprocess.Popen(user_groups_search_cmd, stdout=subprocess.PIPE, shell=True)
+# user_groups = user_groups_process.communicate()[0].strip()
+
+# print(user_groups)

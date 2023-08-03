@@ -11,6 +11,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Security.Authentication;
 using System.DirectoryServices.AccountManagement;
+using System.Text.RegularExpressions;
+
 
 namespace Backend.Controllers
 {
@@ -171,7 +173,7 @@ namespace Backend.Controllers
                     }
                 }
 
-                Dictionary<string, string> deviceInfo = ExecuteSOAPServiceApi(user.DeviceName);
+                Dictionary<string, object> deviceInfo = ExecuteSOAPServiceApi(user.DeviceName);
 
                 if (deviceInfo == null)
                 {
@@ -180,15 +182,27 @@ namespace Backend.Controllers
 
                 if (deviceInfo["Error"] != null)
                 {
-                    return deviceInfo["Error"];
+                    return deviceInfo["Error"] as string;
                 }
 
-                if (user.UserName != deviceInfo["ResponsiblePersonUsername"] && user.UserName != deviceInfo["UserPersonUsername"])
+                string responsiblePersonUsername = deviceInfo["ResponsiblePersonUsername"] as string;
+                string userPersonUsername = deviceInfo["UserPersonUsername"] as string;
+
+                if (responsiblePersonUsername == null || userPersonUsername == null)
                 {
-
-                    return $"User: {user.UserName} is not an owner or a user of the device: {user.DeviceName}!";
+                    return $"Error: Could not retrieve ownership data for the device: {user.DeviceName}";
                 }
 
+                List<string> userEGroups = deviceInfo["EGroupNames"] as List<string>;
+
+                if (userEGroups?.Contains(user.UserName) != true)
+                {
+                    if (user.UserName != responsiblePersonUsername && user.UserName != userPersonUsername)
+                    {
+
+                        return $"User: {user.UserName} is not an owner or a user of the device: {user.DeviceName}!";
+                    }
+                }
                 using (var db = new RapContext())
                 {
                     string rapName = "RAP_" + user.UserName;
@@ -222,7 +236,7 @@ namespace Backend.Controllers
                         return BadRequest("Unable to contact SOAP or device name not found!");
                     }
 
-                    string resourceOwner = "CERN\\" + deviceInfo["ResponsiblePersonUsername"];
+                    string resourceOwner = "CERN\\" + responsiblePersonUsername;
                     var existingRapResource = db.rap_resource.FirstOrDefault(rr =>
                         rr.RAPName == rapName &&
                         rr.resourceName == user.DeviceName &&
@@ -308,53 +322,91 @@ namespace Backend.Controllers
         }
 
 
-        public static Dictionary<string, string> ExecuteSOAPServiceApi(string computerName)
+        public static Dictionary<string, object> ExecuteSOAPServiceApi(string computerName)
         {
             try
             {
-                string pathToScript = Path.Combine(Directory.GetCurrentDirectory(), "SOAPNetworkService.py"); // replace this with the path to your Python script
+                string pathToScript = Path.Combine(Directory.GetCurrentDirectory(), "SOAPNetworkService.py");
+                Dictionary<string, object> result = new Dictionary<string, object>();
+                List<string> eGroupNames = new List<string>();
+                string pattern = @"CN=(.*?),OU";
 
-                using (var process = new System.Diagnostics.Process())
+                using (var process = new Process())
                 {
-                    process.StartInfo.FileName = "python2.7"; // or "python2.7" if you specifically need to run the script with Python 2.7
-                    process.StartInfo.Arguments = $"{pathToScript} {computerName} {username} {password}";
-                    process.StartInfo.UseShellExecute = false;
-                    process.StartInfo.RedirectStandardOutput = true;
-                    process.StartInfo.RedirectStandardError = true;
-                    process.Start();
+                    bool testFlag = true;
+                    if (!testFlag)
+                    {
+                        process.StartInfo.FileName = "python2.7";
+                        process.StartInfo.Arguments = $"{pathToScript} {computerName} {username} {password}";
+                        process.StartInfo.UseShellExecute = false;
+                        process.StartInfo.RedirectStandardOutput = true;
+                        process.StartInfo.RedirectStandardError = true;
+                        process.Start();
 
-                    // Read the output that has been returned from the Python script.
-                    string output = process.StandardOutput.ReadToEnd();
+                    }
+
+                    while (!process.StandardOutput.EndOfStream)
+                    {
+                        string line = process.StandardOutput.ReadLine();
+
+                        if (string.IsNullOrWhiteSpace(line))
+                        {
+                            continue;
+                        }
+
+                        if (result.Count < 2)
+                        {
+                            string username = line.Replace("'", "").Replace("\r", "").Replace("\n", "");
+                            if (result.Count == 0)
+                            {
+                                result["UserPersonUsername"] = username;
+                            }
+                            else
+                            {
+                                result["ResponsiblePersonUsername"] = username;
+                            }
+                        }
+                        else
+                        {
+                            Match match = Regex.Match(line, pattern);
+                            if (match.Success)
+                            {
+                                string eGroupName = match.Groups[1].Value;
+                                eGroupNames.Add(eGroupName);
+                            }
+                        }
+                    }
+
                     string errors = process.StandardError.ReadToEnd();
-
                     process.WaitForExit();
 
-                    if (output.Length == 0 || errors.Length > 0) throw new Exception(errors);
+                    if (eGroupNames.Count == 0 || !string.IsNullOrEmpty(errors))
+                    {
+                        throw new Exception(errors);
+                    }
 
-                    if (output.Contains("Device not found"))
+                    if (errors.Contains("Device not found"))
                     {
                         Console.WriteLine($"Unable to use SOAP operations for device: {computerName}");
-                        //LoggerSingleton.Raps.Error($"Unable to use SOAP operations for device: {computerName}");
                         return null;
                     }
-                    string[] splitString = output.Split('\n');
-                    Dictionary<string, string> result = new Dictionary<string, string>();
-                    result["UserPersonUsername"] = splitString[0];
-                    result["ResponsiblePersonUsername"] = splitString[1];
-                    result["UserPersonUsername"] = result["UserPersonUsername"].Replace("'", "");
-                    result["ResponsiblePersonUsername"] = result["ResponsiblePersonUsername"].Replace("'", "");
-                    result["Error"] = null;
 
-                    return result;
+                    result["EGroupNames"] = eGroupNames;
                 }
+
+                return result;
             }
             catch (Exception ex)
             {
                 Console.WriteLine(ex.ToString());
-                Dictionary<string, string> result = new Dictionary<string, string>();
-                result["UserPersonUsername"] = null;
-                result["ResponsiblePersonUsername"] = null;
-                result["Error"] = null;
+                Dictionary<string, object> result = new Dictionary<string, object>
+                {
+                    ["UserPersonUsername"] = null,
+                    ["ResponsiblePersonUsername"] = null,
+                    ["EGroupNames"] = null,
+                    ["Error"] = null
+                };
+
                 if (ex.Message.Contains("not found in database"))
                 {
                     result["Error"] = $"Device: {computerName} does not exist!";
@@ -363,6 +415,7 @@ namespace Backend.Controllers
                 {
                     result["Error"] = ex.Message;
                 }
+
                 return result;
             }
         }
