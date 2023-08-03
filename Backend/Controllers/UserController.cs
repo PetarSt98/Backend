@@ -63,7 +63,7 @@ namespace Backend.Controllers
                 string rapOwner = UserDevicesController.AddDomainToRapOwner(userName);
                 var fetched_resources = db.rap_resource
                     .Where(r =>
-                        ((r.resourceName == resourceName) && (!r.toDelete || fetchToDeleteResource)))
+                        ((r.resourceName == resourceName) && !r.access && (!r.toDelete || fetchToDeleteResource)))
                         .ToList();
 
                 if (fetched_resources.Count() == 0)
@@ -515,7 +515,7 @@ namespace Backend.Controllers
             {
                 var fetched_resources = db.rap_resource
                     .Where(r =>
-                        ((r.RAPName == rapName) && !r.toDelete))
+                        ((r.RAPName == rapName) && !r.toDelete && !r.access))
                         .ToList();
                 return fetched_resources;
             }
