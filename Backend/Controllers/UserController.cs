@@ -74,7 +74,7 @@ namespace Backend.Controllers
                 {
                     try 
                     { 
-                        var content = System.IO.File.ReadAllText("admins_cache.json");
+                        var content = System.IO.File.ReadAllText(@".\cacheData\admins_cache.json");
                         Dictionary<string, object> adminsInfo = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, object>>(content);
                         userEGroups = adminsInfo["EGroupNames"] as List<string>;
                     }
@@ -510,7 +510,8 @@ namespace Backend.Controllers
                     throw new Exception(eGroups["Error"] as string);
                 }
 
-                await System.IO.File.WriteAllTextAsync("admins_cache.json", JsonSerializer.Serialize(eGroups));
+                Console.WriteLine("Admins info reached, try to cache it.");
+                await System.IO.File.WriteAllTextAsync(@".\cacheData\admins_cache.json", JsonSerializer.Serialize(eGroups));
             }
             catch (Exception ex)
             {

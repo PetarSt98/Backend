@@ -20,6 +20,9 @@ RUN apt-get update && apt-get install -y python2.7 curl ldap-utils
 WORKDIR /app
 COPY --from=build /app/Backend/out .
 
+# Create a subdirectory and change its permissions
+RUN mkdir /app/cacheData && chmod 777 /app/cacheData
+
 # Install Python dependencies
 RUN curl https://bootstrap.pypa.io/pip/2.7/get-pip.py --output get-pip.py \
     && python2.7 get-pip.py \
