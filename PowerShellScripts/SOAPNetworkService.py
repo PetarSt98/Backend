@@ -14,6 +14,11 @@ client = Client(url, doctor=doc, cache=None)
 # Authentication
 username = sys.argv[2] if len(sys.argv) > 2 else exit("Please specify the username")
 password = sys.argv[3] if len(sys.argv) > 3 else exit("Please specify the password")
+admins_only_flag = sys.argv[4] if len(sys.argv) > 3 else exit("Please specify the adminsOnly flag")
+
+if (admins_only_flag != 'false' and admins_only_flag != "true"):
+	exit("Please specify the adminsOnly flag as string true or false")
+
 token = client.service.getAuthToken(username, password, 'CERN')
 authenticationHeader = Element('Auth').insert(Element('token').setText(token))
 client.set_options(soapheaders=authenticationHeader)
@@ -21,20 +26,22 @@ client.set_options(soapheaders=authenticationHeader)
 # Calling getDeviceInfo
 deviceName = sys.argv[1] if len(sys.argv) > 1 else exit("Please specify the set name")
 result = client.service.getDeviceInfo(deviceName)
-# Define ldapsearch command
-ldapsearch_base_cmd = 'ldapsearch -z 0 -E pr=1000/noprompt -LLL -x -h "xldap.cern.ch" -b "OU=Users,OU=Organic Units,DC=cern,DC=ch" "(&(objectClass=user)(mail=%s))" cn | grep \'^cn: \' | sed \'s/^cn: //\''
 
-# Get user information by email from LDAP using ldapsearch
-owner_search_cmd = ldapsearch_base_cmd % result.ResponsiblePerson.Email
-owner_info_process = subprocess.Popen(owner_search_cmd, stdout=subprocess.PIPE, shell=True)
-owner_info = owner_info_process.communicate()[0].strip()
+if (admins_only_flag == 'false'):
+	# Define ldapsearch command
+	ldapsearch_base_cmd = 'ldapsearch -z 0 -E pr=1000/noprompt -LLL -x -h "xldap.cern.ch" -b "OU=Users,OU=Organic Units,DC=cern,DC=ch" "(&(objectClass=user)(mail=%s))" cn | grep \'^cn: \' | sed \'s/^cn: //\''
 
-user_search_cmd = ldapsearch_base_cmd % result.UserPerson.Email
-user_info_process = subprocess.Popen(user_search_cmd, stdout=subprocess.PIPE, shell=True)
-user_info = user_info_process.communicate()[0].strip()
+	# Get user information by email from LDAP using ldapsearch
+	owner_search_cmd = ldapsearch_base_cmd % result.ResponsiblePerson.Email
+	owner_info_process = subprocess.Popen(owner_search_cmd, stdout=subprocess.PIPE, shell=True)
+	owner_info = owner_info_process.communicate()[0].strip()
 
-pprint(user_info)
-pprint(owner_info)
+	user_search_cmd = ldapsearch_base_cmd % result.UserPerson.Email
+	user_info_process = subprocess.Popen(user_search_cmd, stdout=subprocess.PIPE, shell=True)
+	user_info = user_info_process.communicate()[0].strip()
+
+	pprint(user_info)
+	pprint(owner_info)
 
 ldapsearch_groups_cmd = 'ldapsearch -z 0 -E pr=1000/noprompt -LLL -x -h "xldap.cern.ch" -b "DC=cern,DC=ch" "(&(objectClass=group)(cn=support-windows-servers))" member'
 

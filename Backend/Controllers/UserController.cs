@@ -1,17 +1,12 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using SynchronizerLibrary.Loggers;
 using SynchronizerLibrary.Data;
-using System;
 using System.Diagnostics;
 using Backend.Exceptions;
 using Swashbuckle.AspNetCore.Annotations;
 using NetCoreOidcExample.Helpers;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using System.Security.Authentication;
-using System.DirectoryServices.AccountManagement;
 using System.Text.RegularExpressions;
+using System.Text.Json;
+using System.IO;
 
 
 namespace Backend.Controllers
@@ -34,7 +29,7 @@ namespace Backend.Controllers
             deviceName = deviceName.ToUpper();
 
             List<string> users = new List<string>();
-
+            
             try
             {
                 using (var db = new RapContext())
@@ -42,6 +37,8 @@ namespace Backend.Controllers
                     var rap_resources = GetRapByResourceName(db, userName, deviceName, fetchToDeleteResource).ToList();
                     users.AddRange(rap_resources.Select(r => RemoveDomainFromRapOwner(r.resourceOwner)).ToList());
                     users.AddRange(rap_resources.Select(r => RemoveRAPFromUser(r.RAPName)).ToList());
+
+
                 }
             }
             catch (InvalidFetchingException ex)
@@ -60,7 +57,7 @@ namespace Backend.Controllers
         {
             try
             {
-
+                List<string> userEGroups = null;
                 string rapName = UserDevicesController.AddRAPToUser(userName);
                 string rapOwner = UserDevicesController.AddDomainToRapOwner(userName);
                 var fetched_resources = db.rap_resource
@@ -73,9 +70,32 @@ namespace Backend.Controllers
                     throw new InvalidFetchingException($"Device: {resourceName} does not exist!");
                 }
 
-                fetched_resources =  fetched_resources
-                                    .Where(r => r.RAPName == rapName || r.resourceOwner == rapOwner)
-                                    .ToList();
+                if (System.IO.File.Exists("admins_cache.json"))
+                {
+                    try 
+                    { 
+                        var content = System.IO.File.ReadAllText("admins_cache.json");
+                        Dictionary<string, object> adminsInfo = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, object>>(content);
+                        userEGroups = adminsInfo["EGroupNames"] as List<string>;
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine(ex.ToString());
+                        Console.WriteLine("Admin authentication is unsuccessful!");
+                        userEGroups = null;
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("Admin authentication is unsuccessful!");
+                }
+
+                if (userEGroups?.Contains(userName) != true)
+                {
+                    fetched_resources = fetched_resources
+                                        .Where(r => r.RAPName == rapName || r.resourceOwner == rapOwner)
+                                        .ToList();
+                }
 
                 if (fetched_resources.Count() == 0)
                 {
@@ -173,7 +193,7 @@ namespace Backend.Controllers
                     }
                 }
 
-                Dictionary<string, object> deviceInfo = ExecuteSOAPServiceApi(user.DeviceName);
+                Dictionary<string, object> deviceInfo = await ExecuteSOAPServiceApi(user.DeviceName, "false");
 
                 if (deviceInfo == null)
                 {
@@ -187,8 +207,6 @@ namespace Backend.Controllers
 
                 string responsiblePersonUsername = deviceInfo["ResponsiblePersonUsername"] as string;
                 string userPersonUsername = deviceInfo["UserPersonUsername"] as string;
-                //Console.WriteLine(responsiblePersonUsername);
-                //Console.WriteLine(userPersonUsername);
 
                 if (responsiblePersonUsername == null || userPersonUsername == null)
                 {
@@ -196,13 +214,11 @@ namespace Backend.Controllers
                 }
 
                 List<string> userEGroups = deviceInfo["EGroupNames"] as List<string>;
-                Console.WriteLine(userEGroups[0]);
                 if (userEGroups?.Contains(user.UserName) != true)
                 {
                     if (user.UserName != responsiblePersonUsername && user.UserName != userPersonUsername)
                     {
-                        return $"{userEGroups[0]}, {userEGroups[1]}, {userEGroups[2]} ,{userEGroups[3]}";
-                        //return $"User: {user.UserName} is not an owner or a user of the device: {user.DeviceName}!";
+                        return $"User: {user.UserName} is not an owner or a user of the device: {user.DeviceName}!";
                     }
                 }
                 using (var db = new RapContext())
@@ -324,7 +340,7 @@ namespace Backend.Controllers
         }
 
 
-        public static Dictionary<string, object> ExecuteSOAPServiceApi(string computerName)
+        public static async Task<Dictionary<string, object>> ExecuteSOAPServiceApi(string computerName, string adminsOnly)
         {
             try
             {
@@ -336,7 +352,7 @@ namespace Backend.Controllers
                 using (var process = new Process())
                 {
                     process.StartInfo.FileName = "python2.7";
-                    process.StartInfo.Arguments = $"{pathToScript} {computerName} {username} {password}";
+                    process.StartInfo.Arguments = $"{pathToScript} {computerName} {username} {password} {adminsOnly}";
                     process.StartInfo.UseShellExecute = false;
                     process.StartInfo.RedirectStandardOutput = true;
                     process.StartInfo.RedirectStandardError = true;
@@ -351,7 +367,7 @@ namespace Backend.Controllers
                             continue;
                         }
 
-                        if (result.Count < 2)
+                        if (result.Count < 2 && adminsOnly == "false")
                         {
                             string username = line.Replace("'", "").Replace("\r", "").Replace("\n", "");
                             if (result.Count == 0)
@@ -473,7 +489,34 @@ namespace Backend.Controllers
                 return StatusCode(500, $"Internal server error: {ex}");
             }
 
+            Task.Run(() => CacheAdminInfo());
+
             return Ok(new HashSet<string>(devices));
+        }
+
+        private async Task CacheAdminInfo()
+        {
+            try
+            {
+                Dictionary<string, object> eGroups = await UserController.ExecuteSOAPServiceApi("null", "true");
+
+                if (eGroups == null)
+                {
+                    throw new Exception($"SOAP not reachable.");
+                }
+
+                if (eGroups["Error"] != null)
+                {
+                    throw new Exception(eGroups["Error"] as string);
+                }
+
+                await System.IO.File.WriteAllTextAsync("admins_cache.json", JsonSerializer.Serialize(eGroups));
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.ToString());
+                Console.WriteLine("Admins info not reachable!");
+            }
         }
 
         public class DeviceCheckRequest
