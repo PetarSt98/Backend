@@ -23,11 +23,12 @@ token = client.service.getAuthToken(username, password, 'CERN')
 authenticationHeader = Element('Auth').insert(Element('token').setText(token))
 client.set_options(soapheaders=authenticationHeader)
 
-# Calling getDeviceInfo
-deviceName = sys.argv[1] if len(sys.argv) > 1 else exit("Please specify the set name")
-result = client.service.getDeviceInfo(deviceName)
-
 if (admins_only_flag == 'false'):
+	# Calling getDeviceInfo
+	deviceName = sys.argv[1] if len(sys.argv) > 1 else exit("Please specify the set name")
+	result = client.service.getDeviceInfo(deviceName)
+
+
 	# Define ldapsearch command
 	ldapsearch_base_cmd = 'ldapsearch -z 0 -E pr=1000/noprompt -LLL -x -h "xldap.cern.ch" -b "OU=Users,OU=Organic Units,DC=cern,DC=ch" "(&(objectClass=user)(mail=%s))" cn | grep \'^cn: \' | sed \'s/^cn: //\''
 
