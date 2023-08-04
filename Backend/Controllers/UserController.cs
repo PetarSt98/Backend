@@ -187,8 +187,8 @@ namespace Backend.Controllers
 
                 string responsiblePersonUsername = deviceInfo["ResponsiblePersonUsername"] as string;
                 string userPersonUsername = deviceInfo["UserPersonUsername"] as string;
-                Console.WriteLine(responsiblePersonUsername);
-                Console.WriteLine(userPersonUsername);
+                //Console.WriteLine(responsiblePersonUsername);
+                //Console.WriteLine(userPersonUsername);
 
                 if (responsiblePersonUsername == null || userPersonUsername == null)
                 {
@@ -196,13 +196,13 @@ namespace Backend.Controllers
                 }
 
                 List<string> userEGroups = deviceInfo["EGroupNames"] as List<string>;
-
+                Console.WriteLine(userEGroups[0]);
                 if (userEGroups?.Contains(user.UserName) != true)
                 {
                     if (user.UserName != responsiblePersonUsername && user.UserName != userPersonUsername)
                     {
-
-                        return $"User: {user.UserName} is not an owner or a user of the device: {user.DeviceName}!";
+                        return $"{userEGroups[0]}, {userEGroups[1]}, {userEGroups[2]} ,{userEGroups[3]}";
+                        //return $"User: {user.UserName} is not an owner or a user of the device: {user.DeviceName}!";
                     }
                 }
                 using (var db = new RapContext())
