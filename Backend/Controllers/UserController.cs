@@ -70,11 +70,11 @@ namespace Backend.Controllers
                     throw new InvalidFetchingException($"Device: {resourceName} does not exist!");
                 }
 
-                if (System.IO.File.Exists("admins_cache.json"))
+                if (System.IO.File.Exists("/app/cacheData/admins_cache.json"))
                 {
                     try 
                     { 
-                        var content = System.IO.File.ReadAllText(@".\cacheData\admins_cache.json");
+                        var content = System.IO.File.ReadAllText("/app/cacheData/admins_cache.json");
                         Dictionary<string, object> adminsInfo = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, object>>(content);
                         userEGroups = adminsInfo["EGroupNames"] as List<string>;
                     }
@@ -510,8 +510,7 @@ namespace Backend.Controllers
                     throw new Exception(eGroups["Error"] as string);
                 }
 
-                Console.WriteLine("Admins info reached, try to cache it.");
-                await System.IO.File.WriteAllTextAsync(@".\cacheData\admins_cache.json", JsonSerializer.Serialize(eGroups));
+                await System.IO.File.WriteAllTextAsync("/app/cacheData/admins_cache.json", JsonSerializer.Serialize(eGroups));
             }
             catch (Exception ex)
             {
