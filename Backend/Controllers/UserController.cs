@@ -64,6 +64,11 @@ namespace Backend.Controllers
                     .Where(r =>
                         ((r.resourceName == resourceName) && r.access && (!r.toDelete || fetchToDeleteResource)))
                         .ToList();
+                var fetched_resources_all_users = db.rap_resource
+                    .Where(r =>
+                        ((r.resourceName == resourceName) && r.access && (!r.toDelete || fetchToDeleteResource)))
+                        .ToList();
+
 
                 if (fetched_resources.Count() == 0)
                 {
@@ -102,7 +107,7 @@ namespace Backend.Controllers
                     throw new InvalidFetchingException($"User: {userName} is not an owner or a user of the Device: {resourceName}!");
                 }
 
-                return fetched_resources;
+                return fetched_resources_all_users;
 
             }
             catch (Exception ex)
