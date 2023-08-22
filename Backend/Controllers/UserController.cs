@@ -26,6 +26,7 @@ namespace Backend.Controllers
         [SwaggerOperation("Search for all users of the device")]
         public async Task<ActionResult<IEnumerable<string>>> Search(string userName, string deviceName, bool fetchToDeleteResource)
         {
+            userName = "admmario";
             deviceName = deviceName.ToUpper();
 
             List<string> users = new List<string>();
@@ -403,7 +404,7 @@ namespace Backend.Controllers
                                 eGroupUsers.Add(eGroupName);
                             }
 
-                            if (line == "-------------------------")
+                            if (line.Contains("-------------------------"))
                             {
                                 SOAPFlag = false;
                             }
