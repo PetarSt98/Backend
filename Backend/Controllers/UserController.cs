@@ -198,7 +198,7 @@ namespace Backend.Controllers
                     }
                 }
 
-                Dictionary<string, object> deviceInfo = await ExecuteSOAPServiceApi(user.DeviceName, "false");
+                Dictionary<string, object> deviceInfo = await ExecuteSOAPServiceApi(user.UserName, user.DeviceName, "false");
 
                 if (deviceInfo == null)
                 {
@@ -345,7 +345,7 @@ namespace Backend.Controllers
         }
 
 
-        public static async Task<Dictionary<string, object>> ExecuteSOAPServiceApi(string computerName, string adminsOnly)
+        public static async Task<Dictionary<string, object>> ExecuteSOAPServiceApi(string userName, string computerName, string adminsOnly)
         {
             try
             {
@@ -357,7 +357,7 @@ namespace Backend.Controllers
                 using (var process = new Process())
                 {
                     process.StartInfo.FileName = "python2.7";
-                    process.StartInfo.Arguments = $"{pathToScript} {computerName} {username} {password} {adminsOnly}";
+                    process.StartInfo.Arguments = $"{pathToScript} {userName} {computerName} {username} {password} {adminsOnly}";
                     process.StartInfo.UseShellExecute = false;
                     process.StartInfo.RedirectStandardOutput = true;
                     process.StartInfo.RedirectStandardError = true;
@@ -503,7 +503,7 @@ namespace Backend.Controllers
         {
             try
             {
-                Dictionary<string, object> eGroups = await UserController.ExecuteSOAPServiceApi("null", "true");
+                Dictionary<string, object> eGroups = await UserController.ExecuteSOAPServiceApi("null", "null", "true");
 
                 if (eGroups == null)
                 {
