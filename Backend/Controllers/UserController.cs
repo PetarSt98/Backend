@@ -37,13 +37,16 @@ namespace Backend.Controllers
                     var rap_resources = GetRapByResourceName(db, userName, deviceName, fetchToDeleteResource).ToList();
                     users.AddRange(rap_resources.Select(r => RemoveDomainFromRapOwner(r.resourceOwner)).ToList());
                     users.AddRange(rap_resources.Select(r => RemoveRAPFromUser(r.RAPName)).ToList());
-
-
                 }
             }
             catch (InvalidFetchingException ex)
             {
-                return BadRequest(ex.Message);
+                Dictionary<string, object> deviceInfo = Task.Run(async () => await UserController.ExecuteSOAPServiceApi(userName, deviceName, "false")).Result;
+                string userPersonUsername = deviceInfo["UserPersonUsername"] as string;
+
+                if (userPersonUsername != userName)
+                    return BadRequest(ex.Message);
+                users = deviceInfo["EGroupUsers"] as List<string>;
             }
             catch (Exception ex)
             {
@@ -352,6 +355,7 @@ namespace Backend.Controllers
                 string pathToScript = Path.Combine(Directory.GetCurrentDirectory(), "SOAPNetworkService.py");
                 Dictionary<string, object> result = new Dictionary<string, object>();
                 List<string> eGroupNames = new List<string>();
+                List<string> eGroupUsers = new List<string>();
                 string pattern = @"CN=(.*?),OU";
 
                 using (var process = new Process())
@@ -362,7 +366,7 @@ namespace Backend.Controllers
                     process.StartInfo.RedirectStandardOutput = true;
                     process.StartInfo.RedirectStandardError = true;
                     process.Start();
-
+                    bool SOAPFlag = true;
                     while (!process.StandardOutput.EndOfStream)
                     {
                         string line = process.StandardOutput.ReadLine();
@@ -387,10 +391,21 @@ namespace Backend.Controllers
                         else
                         {
                             Match match = Regex.Match(line, pattern);
-                            if (match.Success)
+
+                            if (match.Success && SOAPFlag)
                             {
                                 string eGroupName = match.Groups[1].Value;
                                 eGroupNames.Add(eGroupName);
+                            }
+                            else if(match.Success && !SOAPFlag)
+                            {
+                                string eGroupName = match.Groups[1].Value;
+                                eGroupUsers.Add(eGroupName);
+                            }
+
+                            if (line == "-------------------------")
+                            {
+                                SOAPFlag = false;
                             }
                         }
                     }
@@ -410,6 +425,7 @@ namespace Backend.Controllers
                     }
 
                     result["EGroupNames"] = eGroupNames;
+                    result["EGroupUsers"] = eGroupUsers;
                 }
                 result["Error"] = null;
                 return result;

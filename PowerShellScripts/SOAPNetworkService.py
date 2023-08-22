@@ -23,6 +23,8 @@ token = client.service.getAuthToken(username, password, 'CERN')
 authenticationHeader = Element('Auth').insert(Element('token').setText(token))
 client.set_options(soapheaders=authenticationHeader)
 
+egroups = None
+
 if (admins_only_flag == 'false'):
         # Calling getDeviceInfo
         deviceName = sys.argv[2] if len(sys.argv) > 1 else exit("Please specify the set name")
@@ -49,6 +51,8 @@ if (admins_only_flag == 'false'):
                 ldapsearch_groups_cmd = 'ldapsearch -z 0 -E pr=1000/noprompt -LLL -x -h "xldap.cern.ch" -b "DC=cern,DC=ch" "(&(objectClass=group)(cn={0}))" member'.format(result.ResponsiblePerson.Name)
                 group_members_process = subprocess.Popen(ldapsearch_groups_cmd, stdout=subprocess.PIPE, shell=True)
                 group_members = group_members_process.communicate()[0].strip()
+                #print(group_members)
+                egroups = group_members
                 for group_member in group_members.splitlines():
                         if (userName in group_member):
                                 user_info = userName
@@ -64,7 +68,8 @@ group_members_process = subprocess.Popen(ldapsearch_groups_cmd, stdout=subproces
 group_members = group_members_process.communicate()[0].strip()
 
 print(group_members)
-
+print("-------------------------")
+print(egroups)
 # ldapsearch_groups_cmd = 'ldapsearch -z 0 -E pr=1000/noprompt -LLL -x -h "xldap.cern.ch" -b "OU=Users,OU=Organic Units,DC=cern,DC=ch" "(&(objectClass=user)(cn=%s))" memberOf'
 
 # user_groups_search_cmd = ldapsearch_groups_cmd % "support-windows-servers"
