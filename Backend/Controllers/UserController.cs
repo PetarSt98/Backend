@@ -41,12 +41,12 @@ namespace Backend.Controllers
             }
             catch (InvalidFetchingException ex)
             {
-                Dictionary<string, object> deviceInfo = Task.Run(async () => await UserController.ExecuteSOAPServiceApi(userName, deviceName, "false")).Result;
-                string userPersonUsername = deviceInfo["UserPersonUsername"] as string;
+                //Dictionary<string, object> deviceInfo = Task.Run(async () => await UserController.ExecuteSOAPServiceApi(userName, deviceName, "false")).Result;
+                //string userPersonUsername = deviceInfo["UserPersonUsername"] as string;
 
-                if (userPersonUsername != userName)
-                    return BadRequest(ex.Message);
-                users = deviceInfo["EGroupUsers"] as List<string>;
+                //if (userPersonUsername != userName)
+                return BadRequest(ex.Message);
+                //users = deviceInfo["EGroupUsers"] as List<string>;
             }
             catch (Exception ex)
             {
