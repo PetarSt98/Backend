@@ -162,9 +162,6 @@ namespace Backend.Controllers
         [SwaggerOperation("Add a new user to the device.")]
         public async Task<ActionResult<string>> CreateUser([FromBody] User user)
         {
-
-            user.UserName = "admmario";
-            user.DeviceName = "DFSMIGAPP01";
             try
             {
                 if (user.DeviceName == "" || user.UserName == "")
