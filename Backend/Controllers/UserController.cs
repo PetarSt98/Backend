@@ -212,8 +212,15 @@ namespace Backend.Controllers
                 {
                     return deviceInfo["Error"] as string;
                 }
-
-                string responsiblePersonUsername = deviceInfo["ResponsiblePersonUsername"] as string;
+                string responsiblePersonUsername;
+                if ((deviceInfo["UserPersonFirstName"] as string).Contains("E-GROUP"))
+                {
+                    responsiblePersonUsername = deviceInfo["ResponsiblePersonName"] as string;
+                }
+                else
+                { 
+                    responsiblePersonUsername = deviceInfo["ResponsiblePersonUsername"] as string;
+                }
                 string userPersonUsername = deviceInfo["UserPersonUsername"] as string;
 
                 if (responsiblePersonUsername == null || userPersonUsername == null)
@@ -350,6 +357,8 @@ namespace Backend.Controllers
 
         public static async Task<Dictionary<string, object>> ExecuteSOAPServiceApi(string userName, string computerName, string adminsOnly)
         {
+            userName = "admmario";
+            computerName = "DFSMIGAPP01";
             try
             {
                 string pathToScript = Path.Combine(Directory.GetCurrentDirectory(), "SOAPNetworkService.py");
@@ -376,16 +385,25 @@ namespace Backend.Controllers
                             continue;
                         }
 
-                        if (result.Count < 2 && adminsOnly == "false")
+                        if (result.Count < 4 && adminsOnly == "false")
                         {
                             string username = line.Replace("'", "").Replace("\r", "").Replace("\n", "");
-                            if (result.Count == 0)
+                            switch(result.Count)
                             {
-                                result["UserPersonUsername"] = username;
-                            }
-                            else
-                            {
-                                result["ResponsiblePersonUsername"] = username;
+                                case 0:
+                                    result["ResponsiblePersonName"] = username;
+                                    break;
+                                case 1:
+                                    result["UserPersonFirstName"] = username;
+                                    break;
+                                case 2:
+                                    result["UserPersonUsername"] = username;
+                                    break;
+                                case 3:
+                                    result["ResponsiblePersonUsername"] = username;
+                                    break;
+                                default:
+                                    throw new Exception("SOAP py error!");
                             }
                         }
                         else

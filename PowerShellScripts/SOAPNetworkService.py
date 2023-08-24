@@ -56,7 +56,8 @@ if (admins_only_flag == 'false'):
                 for group_member in group_members.splitlines():
                         if (userName in group_member):
                                 user_info = userName
-
+	pprint(result.ResponsiblePerson.Name)
+	pprint(result.UserPerson.FirstName)
         pprint(user_info)
         pprint(owner_info)
 
