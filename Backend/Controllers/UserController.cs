@@ -162,6 +162,9 @@ namespace Backend.Controllers
         [SwaggerOperation("Add a new user to the device.")]
         public async Task<ActionResult<string>> CreateUser([FromBody] User user)
         {
+
+            user.UserName = "admmario";
+            user.DeviceName = "DFSMIGAPP01";
             try
             {
                 if (user.DeviceName == "" || user.UserName == "")
@@ -357,8 +360,6 @@ namespace Backend.Controllers
 
         public static async Task<Dictionary<string, object>> ExecuteSOAPServiceApi(string userName, string computerName, string adminsOnly)
         {
-            userName = "admmario";
-            computerName = "DFSMIGAPP01";
             try
             {
                 string pathToScript = Path.Combine(Directory.GetCurrentDirectory(), "SOAPNetworkService.py");
