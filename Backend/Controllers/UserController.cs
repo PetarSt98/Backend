@@ -208,7 +208,7 @@ namespace Backend.Controllers
                     return $"Device: {user.DeviceName} does not exist!";
                 }
 
-                if (deviceInfo["validUser"] != user.UserName)
+                if (deviceInfo["validUser"] as string != user.UserName)
                 {
                     return $"User: {user.UserName} does not exist!";
                 }
