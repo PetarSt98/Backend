@@ -56,10 +56,17 @@ if (admins_only_flag == 'false'):
                 for group_member in group_members.splitlines():
                         if (userName in group_member):
                                 user_info = userName
-	pprint(result.ResponsiblePerson.Name)
-	pprint(result.UserPerson.FirstName)
+        ldapsearch_user_name_cmd = 'ldapsearch -z 0 -E pr=1000/noprompt -LLL -x -h "xldap.cern.ch" -b "OU=Users,OU=Organic Units,DC=cern,DC=ch" "(&(objectClass=user)(sAMAccountName=%s))" cn | grep \'^cn: \' | sed \'s/^cn: //\'' % userName
+
+	# Get user's full name using ldapsearch
+        user_name_process = subprocess.Popen(ldapsearch_user_name_cmd, stdout=subprocess.PIPE, shell=True)
+        user_full_name = user_name_process.communicate()[0].strip()
+
+        pprint(result.ResponsiblePerson.Name)
+        pprint(result.UserPerson.FirstName)
         pprint(user_info)
         pprint(owner_info)
+        pprint(user_full_name)
 
 ldapsearch_groups_cmd = 'ldapsearch -z 0 -E pr=1000/noprompt -LLL -x -h "xldap.cern.ch" -b "DC=cern,DC=ch" "(&(objectClass=group)(cn=NICE Local Administrators Managers))" member'
 

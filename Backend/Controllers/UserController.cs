@@ -208,6 +208,11 @@ namespace Backend.Controllers
                     return $"Device: {user.DeviceName} does not exist!";
                 }
 
+                if (deviceInfo["validUser"] != user.UserName)
+                {
+                    return $"User: {user.UserName} does not exist!";
+                }
+
                 if (deviceInfo["Error"] != null)
                 {
                     return deviceInfo["Error"] as string;
@@ -383,7 +388,7 @@ namespace Backend.Controllers
                             continue;
                         }
 
-                        if (result.Count < 4 && adminsOnly == "false")
+                        if (result.Count < 5 && adminsOnly == "false")
                         {
                             string username = line.Replace("'", "").Replace("\r", "").Replace("\n", "");
                             switch(result.Count)
@@ -399,6 +404,9 @@ namespace Backend.Controllers
                                     break;
                                 case 3:
                                     result["ResponsiblePersonUsername"] = username;
+                                    break;
+                                case 4:
+                                    result["validUser"] = username;
                                     break;
                                 default:
                                     throw new Exception("SOAP py error!");
