@@ -55,7 +55,6 @@ namespace Backend
                 c.OperationFilter<HeaderFilter>();
             });
 
-            // Add CORS policy
             services.AddCors(options =>
             {
                 options.AddPolicy("CorsPolicy", builder =>
