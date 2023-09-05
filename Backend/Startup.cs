@@ -80,7 +80,6 @@ namespace Backend
             }
             app.UseRouting();
 
-            // Apply the CORS policy
             app.UseCors("CorsPolicy");
 
             app.UseSwagger();
