@@ -216,6 +216,7 @@ namespace Backend.Controllers
                 List<string> primaryAccounts = deviceInfo["PrimaryAccounts"] as List<string>;
                 if (!primaryAccounts.Contains(user.SignedInUser) && user.AddDeviceOrUser == "user")
                 {
+                    Console.WriteLine(user.SignedInUser);
                     Console.WriteLine(user.UserName);
                     Console.WriteLine(primaryAccounts[0]);
                     Console.WriteLine(primaryAccounts[primaryAccounts.Count - 1]);
