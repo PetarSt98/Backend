@@ -435,6 +435,7 @@ namespace Backend.Controllers
                             else if (match.Success && !SOAPFlag && primaryGroupFlag)
                             {
                                 string eGroupName = match.Groups[1].Value;
+                                Console.WriteLine(eGroupName);
                                 primaryUsers.Add(eGroupName);
                             }
 
@@ -442,6 +443,7 @@ namespace Backend.Controllers
                             {
                                 if (!SOAPFlag)
                                 {
+                                    Console.WriteLine("PrimaryAccounts");
                                     primaryGroupFlag = true;
                                 }
                                 SOAPFlag = false;
