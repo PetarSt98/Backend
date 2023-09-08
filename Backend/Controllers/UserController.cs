@@ -394,7 +394,7 @@ namespace Backend.Controllers
                     while (!process.StandardOutput.EndOfStream)
                     {
                         string line = process.StandardOutput.ReadLine();
-
+                        Console.WriteLine(line);
                         if (string.IsNullOrWhiteSpace(line))
                         {
                             continue;
@@ -444,7 +444,7 @@ namespace Backend.Controllers
                                 eGroupUsers.Add(eGroupName);
                             }
 
-                                if (line.Contains("-------------------------"))
+                            if (line.Contains("-------------------------"))
                             {
                                 if (!SOAPFlag) 
                                     primaryGroupFlag = true;
