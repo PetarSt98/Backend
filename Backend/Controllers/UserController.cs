@@ -427,7 +427,7 @@ namespace Backend.Controllers
                         else
                         {
                             Match match = Regex.Match(line, pattern);
-
+                            Console.WriteLine(match.Groups[1].Value);
                             if (match.Success && SOAPFlag && !primaryGroupFlag)
                             {
                                 string eGroupName = match.Groups[1].Value;
@@ -446,8 +446,12 @@ namespace Backend.Controllers
 
                             if (line.Contains("-------------------------"))
                             {
-                                if (!SOAPFlag) 
+                                Console.WriteLine("Detected the ------");
+                                if (!SOAPFlag)
+                                {
+                                    Console.WriteLine("Detected the second ------");
                                     primaryGroupFlag = true;
+                                }
                                 SOAPFlag = false;
                             }
                         }
