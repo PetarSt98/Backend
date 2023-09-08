@@ -212,9 +212,12 @@ namespace Backend.Controllers
                 {
                     return $"User: {user.UserName} does not exist!";
                 }
-
-                if (!(deviceInfo["PrimaryAccounts"] as List<string>).Contains(user.UserName) && user.AddDeviceOrUser == "user")
+                List<string> primaryAccounts = deviceInfo["PrimaryAccounts"] as List<string>;
+                if (!primaryAccounts.Contains(user.UserName) && user.AddDeviceOrUser == "user")
                 {
+                    Console.WriteLine(user.UserName);
+                    Console.WriteLine(primaryAccounts[0]);
+                    Console.WriteLine(primaryAccounts[primaryAccounts.Count - 1]);
                     return $"User: {user.UserName} is not a primary account!";
                 }
 
@@ -435,7 +438,6 @@ namespace Backend.Controllers
                             else if (match.Success && !SOAPFlag && primaryGroupFlag)
                             {
                                 string eGroupName = match.Groups[1].Value;
-                                Console.WriteLine(eGroupName);
                                 primaryUsers.Add(eGroupName);
                             }
 
@@ -443,7 +445,6 @@ namespace Backend.Controllers
                             {
                                 if (!SOAPFlag)
                                 {
-                                    Console.WriteLine("PrimaryAccounts");
                                     primaryGroupFlag = true;
                                 }
                                 SOAPFlag = false;
