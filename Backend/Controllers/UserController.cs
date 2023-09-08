@@ -213,13 +213,15 @@ namespace Backend.Controllers
                 {
                     return $"User: {user.UserName} does not exist!";
                 }
-                List<string> primaryAccounts = deviceInfo["PrimaryAccounts"] as List<string>;
-                if (!primaryAccounts.Contains(user.SignedInUser) && user.AddDeviceOrUser == "user")
+
+                if (user.SignedInUser != "Primary")
                 {
-                    return $"Signed in user: {user.SignedInUser} is not a primary account!\nOnly primary accounts can manage users!";
+                    List<string> primaryAccounts = deviceInfo["PrimaryAccounts"] as List<string>;
+                    if (!primaryAccounts.Contains(user.SignedInUser) && user.AddDeviceOrUser == "user")
+                    {
+                        return $"Signed in user: {user.SignedInUser} is not a primary account!\nOnly primary accounts can manage users!";
+                    }
                 }
-
-
                 if (deviceInfo["Error"] != null)
                 {
                     return deviceInfo["Error"] as string;
@@ -381,7 +383,7 @@ namespace Backend.Controllers
                 using (var process = new Process())
                 {
                     process.StartInfo.FileName = "python2.7";
-                    process.StartInfo.Arguments = $"{pathToScript} {userName} {computerName} {username} {password} {adminsOnly} cern-accounts-primary cernts-TSgateway-AllowedNonPrimaryAccount";
+                    process.StartInfo.Arguments = $"{pathToScript} {userName} {computerName} {username} {password} {adminsOnly} cernts-TSgateway-AllowedNonPrimaryAccount";
                     process.StartInfo.UseShellExecute = false;
                     process.StartInfo.RedirectStandardOutput = true;
                     process.StartInfo.RedirectStandardError = true;
