@@ -213,6 +213,10 @@ namespace Backend.Controllers
                     return $"User: {user.UserName} does not exist!";
                 }
 
+                Console.WriteLine("=========================");
+                foreach (var user123 in (deviceInfo["PrimaryAccounts"] as List<string>))
+                    Console.WriteLine(user123);
+                Console.WriteLine("=========================");
                 if (!(deviceInfo["PrimaryAccounts"] as List<string>).Contains(user.UserName) && user.AddDeviceOrUser == "user")
                 {
                     return $"User: {user.UserName} is not a primary account!";
