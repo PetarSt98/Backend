@@ -213,6 +213,12 @@ namespace Backend.Controllers
                     return $"User: {user.UserName} does not exist!";
                 }
 
+                if (!(deviceInfo["PrimaryAccounts"] as List<string>).Contains(user.UserName) && user.AddDeviceOrUser == "user")
+                {
+                    return $"User: {user.UserName} is not a primary account!";
+                }
+
+
                 if (deviceInfo["Error"] != null)
                 {
                     return deviceInfo["Error"] as string;
@@ -368,17 +374,19 @@ namespace Backend.Controllers
                 Dictionary<string, object> result = new Dictionary<string, object>();
                 List<string> eGroupNames = new List<string>();
                 List<string> eGroupUsers = new List<string>();
+                List<string> primaryUsers = new List<string>();
                 string pattern = @"CN=(.*?),OU";
 
                 using (var process = new Process())
                 {
                     process.StartInfo.FileName = "python2.7";
-                    process.StartInfo.Arguments = $"{pathToScript} {userName} {computerName} {username} {password} {adminsOnly}";
+                    process.StartInfo.Arguments = $"{pathToScript} {userName} {computerName} {username} {password} {adminsOnly} cern-accounts-primary";
                     process.StartInfo.UseShellExecute = false;
                     process.StartInfo.RedirectStandardOutput = true;
                     process.StartInfo.RedirectStandardError = true;
                     process.Start();
                     bool SOAPFlag = true;
+                    bool primaryGroupFlag = false;
                     while (!process.StandardOutput.EndOfStream)
                     {
                         string line = process.StandardOutput.ReadLine();
@@ -416,19 +424,26 @@ namespace Backend.Controllers
                         {
                             Match match = Regex.Match(line, pattern);
 
-                            if (match.Success && SOAPFlag)
+                            if (match.Success && SOAPFlag && !primaryGroupFlag)
                             {
                                 string eGroupName = match.Groups[1].Value;
                                 eGroupNames.Add(eGroupName);
                             }
-                            else if(match.Success && !SOAPFlag)
+                            else if (match.Success && !SOAPFlag && !primaryGroupFlag)
+                            {
+                                string eGroupName = match.Groups[1].Value;
+                                eGroupUsers.Add(eGroupName);
+                            }
+                            else if (match.Success && !SOAPFlag && primaryGroupFlag)
                             {
                                 string eGroupName = match.Groups[1].Value;
                                 eGroupUsers.Add(eGroupName);
                             }
 
-                            if (line.Contains("-------------------------"))
+                                if (line.Contains("-------------------------"))
                             {
+                                if (!SOAPFlag) 
+                                    primaryGroupFlag = true;
                                 SOAPFlag = false;
                             }
                         }
@@ -450,6 +465,7 @@ namespace Backend.Controllers
 
                     result["EGroupNames"] = eGroupNames;
                     result["EGroupUsers"] = eGroupUsers;
+                    result["PrimaryAccounts"] = primaryUsers;
                 }
                 result["Error"] = null;
                 return result;
