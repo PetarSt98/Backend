@@ -213,10 +213,6 @@ namespace Backend.Controllers
                     return $"User: {user.UserName} does not exist!";
                 }
 
-                Console.WriteLine("=========================");
-                foreach (var user123 in (deviceInfo["PrimaryAccounts"] as List<string>))
-                    Console.WriteLine(user123);
-                Console.WriteLine("=========================");
                 if (!(deviceInfo["PrimaryAccounts"] as List<string>).Contains(user.UserName) && user.AddDeviceOrUser == "user")
                 {
                     return $"User: {user.UserName} is not a primary account!";
@@ -394,7 +390,6 @@ namespace Backend.Controllers
                     while (!process.StandardOutput.EndOfStream)
                     {
                         string line = process.StandardOutput.ReadLine();
-                        Console.WriteLine(line);
                         if (string.IsNullOrWhiteSpace(line))
                         {
                             continue;
@@ -427,7 +422,6 @@ namespace Backend.Controllers
                         else
                         {
                             Match match = Regex.Match(line, pattern);
-                            Console.WriteLine(match.Groups[1].Value);
                             if (match.Success && SOAPFlag && !primaryGroupFlag)
                             {
                                 string eGroupName = match.Groups[1].Value;
@@ -441,15 +435,13 @@ namespace Backend.Controllers
                             else if (match.Success && !SOAPFlag && primaryGroupFlag)
                             {
                                 string eGroupName = match.Groups[1].Value;
-                                eGroupUsers.Add(eGroupName);
+                                primaryUsers.Add(eGroupName);
                             }
 
                             if (line.Contains("-------------------------"))
                             {
-                                Console.WriteLine("Detected the ------");
                                 if (!SOAPFlag)
                                 {
-                                    Console.WriteLine("Detected the second ------");
                                     primaryGroupFlag = true;
                                 }
                                 SOAPFlag = false;
