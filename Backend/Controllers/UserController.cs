@@ -384,7 +384,7 @@ namespace Backend.Controllers
                 using (var process = new Process())
                 {
                     process.StartInfo.FileName = "python2.7";
-                    process.StartInfo.Arguments = $"{pathToScript} {userName} {computerName} {username} {password} {adminsOnly} cern-accounts-primary";
+                    process.StartInfo.Arguments = $"{pathToScript} {userName} {computerName} {username} {password} {adminsOnly} cern-accounts-primary cernts-TSgateway-AllowedNonPrimaryAccount";
                     process.StartInfo.UseShellExecute = false;
                     process.StartInfo.RedirectStandardOutput = true;
                     process.StartInfo.RedirectStandardError = true;
