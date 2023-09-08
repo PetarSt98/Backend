@@ -140,6 +140,7 @@ namespace Backend.Controllers
     {
         public string UserName { get; set; }
         public string DeviceName { get; set; }
+        public string SignedInUser { get; set; }
         public string AddDeviceOrUser { get; set; }
     }
 
@@ -213,7 +214,7 @@ namespace Backend.Controllers
                     return $"User: {user.UserName} does not exist!";
                 }
                 List<string> primaryAccounts = deviceInfo["PrimaryAccounts"] as List<string>;
-                if (!primaryAccounts.Contains(user.UserName) && user.AddDeviceOrUser == "user")
+                if (!primaryAccounts.Contains(user.SignedInUser) && user.AddDeviceOrUser == "user")
                 {
                     Console.WriteLine(user.UserName);
                     Console.WriteLine(primaryAccounts[0]);
