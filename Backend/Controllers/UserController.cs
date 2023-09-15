@@ -35,7 +35,7 @@ namespace Backend.Controllers
                 using (var db = new RapContext())
                 {
                     var rap_resources = GetRapByResourceName(db, userName, deviceName, fetchToDeleteResource).ToList();
-                    users.AddRange(rap_resources.Select(r => RemoveDomainFromRapOwner(r.resourceOwner)).ToList());
+                    //users.AddRange(rap_resources.Select(r => RemoveDomainFromRapOwner(r.resourceOwner)).ToList());
                     users.AddRange(rap_resources.Select(r => RemoveRAPFromUser(r.RAPName)).ToList());
                 }
             }
