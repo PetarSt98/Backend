@@ -602,7 +602,7 @@ namespace Backend.Controllers
                 using (var db = new RapContext())
                 {
                     var rap_resources = GetRapByRAPName(db, AddRAPToUser(userName)).ToList();
-                    rap_resources.AddRange(GetRapByResourceOwner(db, AddDomainToRapOwner(userName)).ToList());
+                    //rap_resources.AddRange(GetRapByResourceOwner(db, AddDomainToRapOwner(userName)).ToList());
                     devices.AddRange(rap_resources.Where(r => !r.toDelete).Select(r => r.synchronized).ToList());
                 }
             }
