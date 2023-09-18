@@ -538,13 +538,13 @@ namespace Backend.Controllers
         public async Task<ActionResult<IEnumerable<string>>> FetchDevices(string userName)
         {
             List<string> devices = new List<string>();
-
+            userName = "pmartinz";
             try
             {
                 using (var db = new RapContext())
                 {
                     var rap_resources = GetRapByRAPName(db, AddRAPToUser(userName)).ToList();
-                    rap_resources.AddRange(GetRapByResourceOwner(db, AddDomainToRapOwner(userName)).ToList());
+                    //rap_resources.AddRange(GetRapByResourceOwner(db, AddDomainToRapOwner(userName)).ToList());
                     devices.AddRange(rap_resources.Where(r => !r.toDelete).Select(r => r.resourceName).ToList());
                 }
             }
