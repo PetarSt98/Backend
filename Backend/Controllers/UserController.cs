@@ -597,6 +597,7 @@ namespace Backend.Controllers
         {
             List<bool> devices = new List<bool>();
             string userName = request.UserName;
+            userName = "pmartinz";
             try
             {
                 using (var db = new RapContext())
