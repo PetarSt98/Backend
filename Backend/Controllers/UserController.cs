@@ -538,7 +538,6 @@ namespace Backend.Controllers
         public async Task<ActionResult<IEnumerable<string>>> FetchDevices(string userName)
         {
             List<string> devices = new List<string>();
-            userName = "pmartinz";
             try
             {
                 using (var db = new RapContext())
@@ -597,7 +596,6 @@ namespace Backend.Controllers
         {
             List<bool> devices = new List<bool>();
             string userName = request.UserName;
-            userName = "pmartinz";
             try
             {
                 using (var db = new RapContext())
