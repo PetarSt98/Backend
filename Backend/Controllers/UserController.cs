@@ -35,7 +35,7 @@ namespace Backend.Controllers
                 using (var db = new RapContext())
                 {
                     var rap_resources = GetRapByResourceName(db, userName, deviceName, fetchToDeleteResource).ToList();
-                    users.AddRange(rap_resources.Select(r => RemoveDomainFromRapOwner(r.resourceOwner)).ToList());
+                    //users.AddRange(rap_resources.Select(r => RemoveDomainFromRapOwner(r.resourceOwner)).ToList());
                     users.AddRange(rap_resources.Select(r => RemoveRAPFromUser(r.RAPName)).ToList());
                 }
             }
@@ -140,6 +140,7 @@ namespace Backend.Controllers
     {
         public string UserName { get; set; }
         public string DeviceName { get; set; }
+        public string SignedInUser { get; set; }
         public string AddDeviceOrUser { get; set; }
     }
 
@@ -213,6 +214,14 @@ namespace Backend.Controllers
                     return $"User: {user.UserName} does not exist!";
                 }
 
+                if (user.SignedInUser != "Primary")
+                {
+                    List<string> primaryAccounts = deviceInfo["PrimaryAccounts"] as List<string>;
+                    if (!primaryAccounts.Contains(user.SignedInUser) && user.AddDeviceOrUser == "user")
+                    {
+                        return $"Signed in user: {user.SignedInUser} is not a primary account!\nOnly primary accounts can manage users!";
+                    }
+                }
                 if (deviceInfo["Error"] != null)
                 {
                     return deviceInfo["Error"] as string;
@@ -368,21 +377,22 @@ namespace Backend.Controllers
                 Dictionary<string, object> result = new Dictionary<string, object>();
                 List<string> eGroupNames = new List<string>();
                 List<string> eGroupUsers = new List<string>();
+                List<string> primaryUsers = new List<string>();
                 string pattern = @"CN=(.*?),OU";
 
                 using (var process = new Process())
                 {
                     process.StartInfo.FileName = "python2.7";
-                    process.StartInfo.Arguments = $"{pathToScript} {userName} {computerName} {username} {password} {adminsOnly}";
+                    process.StartInfo.Arguments = $"{pathToScript} {userName} {computerName} {username} {password} {adminsOnly} cernts-TSgateway-AllowedNonPrimaryAccount";
                     process.StartInfo.UseShellExecute = false;
                     process.StartInfo.RedirectStandardOutput = true;
                     process.StartInfo.RedirectStandardError = true;
                     process.Start();
                     bool SOAPFlag = true;
+                    bool primaryGroupFlag = false;
                     while (!process.StandardOutput.EndOfStream)
                     {
                         string line = process.StandardOutput.ReadLine();
-
                         if (string.IsNullOrWhiteSpace(line))
                         {
                             continue;
@@ -415,20 +425,28 @@ namespace Backend.Controllers
                         else
                         {
                             Match match = Regex.Match(line, pattern);
-
-                            if (match.Success && SOAPFlag)
+                            if (match.Success && SOAPFlag && !primaryGroupFlag)
                             {
                                 string eGroupName = match.Groups[1].Value;
                                 eGroupNames.Add(eGroupName);
                             }
-                            else if(match.Success && !SOAPFlag)
+                            else if (match.Success && !SOAPFlag && !primaryGroupFlag)
                             {
                                 string eGroupName = match.Groups[1].Value;
                                 eGroupUsers.Add(eGroupName);
                             }
+                            else if (match.Success && !SOAPFlag && primaryGroupFlag)
+                            {
+                                string eGroupName = match.Groups[1].Value;
+                                primaryUsers.Add(eGroupName);
+                            }
 
                             if (line.Contains("-------------------------"))
                             {
+                                if (!SOAPFlag)
+                                {
+                                    primaryGroupFlag = true;
+                                }
                                 SOAPFlag = false;
                             }
                         }
@@ -450,6 +468,7 @@ namespace Backend.Controllers
 
                     result["EGroupNames"] = eGroupNames;
                     result["EGroupUsers"] = eGroupUsers;
+                    result["PrimaryAccounts"] = primaryUsers;
                 }
                 result["Error"] = null;
                 return result;
@@ -519,13 +538,12 @@ namespace Backend.Controllers
         public async Task<ActionResult<IEnumerable<string>>> FetchDevices(string userName)
         {
             List<string> devices = new List<string>();
-
             try
             {
                 using (var db = new RapContext())
                 {
                     var rap_resources = GetRapByRAPName(db, AddRAPToUser(userName)).ToList();
-                    rap_resources.AddRange(GetRapByResourceOwner(db, AddDomainToRapOwner(userName)).ToList());
+                    //rap_resources.AddRange(GetRapByResourceOwner(db, AddDomainToRapOwner(userName)).ToList());
                     devices.AddRange(rap_resources.Where(r => !r.toDelete).Select(r => r.resourceName).ToList());
                 }
             }
@@ -583,7 +601,7 @@ namespace Backend.Controllers
                 using (var db = new RapContext())
                 {
                     var rap_resources = GetRapByRAPName(db, AddRAPToUser(userName)).ToList();
-                    rap_resources.AddRange(GetRapByResourceOwner(db, AddDomainToRapOwner(userName)).ToList());
+                    //rap_resources.AddRange(GetRapByResourceOwner(db, AddDomainToRapOwner(userName)).ToList());
                     devices.AddRange(rap_resources.Where(r => !r.toDelete).Select(r => r.synchronized).ToList());
                 }
             }

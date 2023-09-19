@@ -55,13 +55,12 @@ namespace Backend
                 c.OperationFilter<HeaderFilter>();
             });
 
-            // Add CORS policy
             services.AddCors(options =>
             {
                 options.AddPolicy("CorsPolicy", builder =>
                     builder.WithOrigins(
                         "http://localhost:3000",
-                        "https://remote-desktop-gateway.app.cern.ch"
+                        "https://remote-desktop-gateway-test.app.cern.ch"
                         ) 
                     .AllowAnyMethod()
                     .AllowAnyHeader()
