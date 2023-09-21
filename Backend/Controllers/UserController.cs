@@ -602,7 +602,39 @@ namespace Backend.Controllers
                 {
                     var rap_resources = GetRapByRAPName(db, AddRAPToUser(userName)).ToList();
                     //rap_resources.AddRange(GetRapByResourceOwner(db, AddDomainToRapOwner(userName)).ToList());
-                    devices.AddRange(rap_resources.Where(r => !r.toDelete).Select(r => r.synchronized).ToList());
+                    devices.AddRange(rap_resources.Where(r => !r.toDelete).Select(r => r.synchronized && !r.exception.GetValueOrDefault()).ToList());
+                }
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex}");
+            }
+
+            return Ok(devices);
+
+
+            //List<bool> statuses = new List<bool>(new bool[request.DeviceNames.Count]);
+
+            //return Ok(statuses);
+        }
+
+        [Authorize]
+        [HttpPost]
+        [Route("uncompletedCheck")]
+        [SwaggerOperation("Check all devices of the user.")]
+        public async Task<ActionResult<IEnumerable<bool>>> CheckUncompleteDevices([FromBody] DeviceCheckRequest request)
+        {
+            List<bool> devices = new List<bool>();
+            string userName = request.UserName;
+            try
+            {
+                using (var db = new RapContext())
+                {
+                    var rap_resources = GetRapByRAPName(db, AddRAPToUser(userName)).ToList();
+                    //rap_resources.AddRange(GetRapByResourceOwner(db, AddDomainToRapOwner(userName)).ToList());
+                    devices.AddRange(rap_resources.Where(r => !r.toDelete)
+                                                  .Select(r => r.synchronized && r.exception.GetValueOrDefault())
+                                                  .ToList());
                 }
             }
             catch (Exception ex)
