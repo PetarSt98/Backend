@@ -651,6 +651,52 @@ namespace Backend.Controllers
         }
 
 
+        [Authorize]
+        [HttpDelete]
+        [Route("confirm")]
+        [SwaggerOperation("Search for all users of the device")]
+        public async Task<ActionResult<string>> ConfirmDevice(string userName, string deviceName)
+        {
+            try
+            {
+                using (var db = new RapContext())
+                {
+
+                    string rapName = AddRAPToUser(userName);
+
+                    var resourceses = db.rap_resource
+                        .Where(r =>
+                            ((r.resourceName == deviceName) &&
+                            (r.RAPName == rapName) && r.exception.GetValueOrDefault())
+                        )
+                        .ToList();
+
+                    if (resourceses.Any())
+                    {
+                        foreach (rap_resource resource in resourceses)
+                        {
+                            resource.exception = false;
+                            resource.synchronized = true;
+                        }
+
+                        db.SaveChanges();
+                    }
+                    else
+                    {
+                        //LoggerSingleton.General.Warn($"Resource with name '{deviceName}' not found");
+                        return "Unsuccessful device confirmation! No such device found for the user!";
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                return $"Unsuccessful user confirmation! Error: {ex.Message}";
+            }
+
+            return "Successful user confirmation!";
+        }
+
 
         [Authorize]
         [HttpDelete]
