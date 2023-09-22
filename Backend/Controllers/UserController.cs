@@ -652,7 +652,7 @@ namespace Backend.Controllers
 
 
         [Authorize]
-        [HttpDelete]
+        [HttpGet]
         [Route("confirm")]
         [SwaggerOperation("Search for all users of the device")]
         public async Task<ActionResult<string>> ConfirmDevice(string userName, string deviceName)
