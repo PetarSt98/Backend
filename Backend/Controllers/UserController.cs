@@ -667,7 +667,7 @@ namespace Backend.Controllers
                     var resourceses = db.rap_resource
                         .Where(r =>
                             ((r.resourceName == deviceName) &&
-                            (r.RAPName == rapName) && r.exception.GetValueOrDefault())
+                            (r.RAPName == rapName) && r.exception == true)
                         )
                         .ToList();
 
