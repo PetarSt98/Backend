@@ -6,7 +6,6 @@ using Swashbuckle.AspNetCore.Annotations;
 using NetCoreOidcExample.Helpers;
 using System.Text.RegularExpressions;
 using System.Text.Json;
-using System.IO;
 
 
 namespace Backend.Controllers
@@ -557,31 +556,57 @@ namespace Backend.Controllers
             return Ok(new HashSet<string>(devices));
         }
 
-        private async Task CacheAdminInfo()
+        [Authorize]
+        [HttpGet]
+        [Route("admins")]
+        [SwaggerOperation("Fetch all devices of the user.")]
+        public async Task<ActionResult<bool>> FetchAdmins(string userName)
         {
-            try
+            Task.Run(() => CacheAdminInfo());
+
+            if (System.IO.File.Exists("/app/cacheData/admins_cache.json"))
             {
-                Dictionary<string, object> eGroups = await UserController.ExecuteSOAPServiceApi("null", "null", "true");
-
-                if (eGroups == null)
+                var content = System.IO.File.ReadAllText("/app/cacheData/admins_cache.json");
+                Dictionary<string, object> adminsInfo = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, object>>(content);
+                List<string> userEGroups = adminsInfo["EGroupNames"] as List<string>;
+                if (userEGroups.Contains(userName))
                 {
-                    throw new Exception($"SOAP not reachable.");
+                    return Ok(true);
                 }
-
-                if (eGroups["Error"] != null)
-                {
-                    throw new Exception(eGroups["Error"] as string);
-                }
-
-                await System.IO.File.WriteAllTextAsync("/app/cacheData/admins_cache.json", JsonSerializer.Serialize(eGroups));
             }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.ToString());
-                Console.WriteLine("Admins info not reachable!");
-            }
+
+            return Ok(false);
         }
 
+        private async Task CacheAdminInfo()
+        {
+
+            if (!System.IO.File.Exists("/app/cacheData/admins_cache.json"))
+            {
+
+                try
+                {
+                    Dictionary<string, object> eGroups = await UserController.ExecuteSOAPServiceApi("null", "null", "true");
+
+                    if (eGroups == null)
+                    {
+                        throw new Exception($"SOAP not reachable.");
+                    }
+
+                    if (eGroups["Error"] != null)
+                    {
+                        throw new Exception(eGroups["Error"] as string);
+                    }
+
+                    await System.IO.File.WriteAllTextAsync("/app/cacheData/admins_cache.json", JsonSerializer.Serialize(eGroups));
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex.ToString());
+                    Console.WriteLine("Admins info not reachable!");
+                }
+            }
+        }
         public class DeviceCheckRequest
         {
             public string UserName { get; set; }
