@@ -84,6 +84,19 @@ namespace Backend.Controllers
                         var content = System.IO.File.ReadAllText("/app/cacheData/admins_cache.json");
                         Dictionary<string, object> adminsInfo = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, object>>(content);
                         userEGroups = adminsInfo["EGroupNames"] as List<string>;
+
+                        if (userEGroups == null)
+                        {
+                            if (adminsInfo.TryGetValue("EGroupNames", out var eGroupNamesObj))
+                            {
+                                var jArray = eGroupNamesObj as Newtonsoft.Json.Linq.JArray;
+                                if (jArray != null)
+                                {
+                                    userEGroups = jArray.ToObject<List<string>>();
+                                }
+                            }
+                        }
+
                     }
                     catch (Exception ex)
                     {
@@ -575,14 +588,25 @@ namespace Backend.Controllers
                     Console.WriteLine("Cache exist");
                     var content = await System.IO.File.ReadAllTextAsync(filePath);
                     var adminsInfo = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, object>>(content);
+                    List<string> userEGroups = adminsInfo["EGroupNames"] as List<string>;
 
-                    if (adminsInfo.TryGetValue("EGroupNames", out var eGroupNamesObj))
+                    if (userEGroups == null)
                     {
-                        var userEGroups = eGroupNamesObj as List<string>;
-                        if (userEGroups != null && userEGroups.Contains(userName))
+                        if (adminsInfo.TryGetValue("EGroupNames", out var eGroupNamesObj))
                         {
-                            return Ok(true);
+                            Console.WriteLine("USAO");
+                            var jArray = eGroupNamesObj as Newtonsoft.Json.Linq.JArray;
+                            if (jArray != null)
+                            {
+                                userEGroups = jArray.ToObject<List<string>>();
+                            }
                         }
+                    }
+                    Console.WriteLine(userEGroups.Count);
+                    userEGroups.Add("pstojkov");
+                    if (userEGroups != null && userEGroups.Contains(userName))
+                    {
+                        return Ok(true);
                     }
                 }
             }
