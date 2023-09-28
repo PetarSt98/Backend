@@ -559,33 +559,40 @@ namespace Backend.Controllers
         [Authorize]
         [HttpGet]
         [Route("admins")]
-        [SwaggerOperation("Fetch all devices of the user.")]
+        [SwaggerOperation("Checks if the user is an admin based on cached data.")]
         public async Task<ActionResult<bool>> FetchAdmins(string userName)
         {
-            Console.WriteLine("Entering FetchAdmins");
-            Task.Run(() => CacheAdminInfo());
-            Console.WriteLine("Finished FetchAdmins");
-
-            if (System.IO.File.Exists("/app/cacheData/admins_cache.json"))
+            try
             {
-                Console.WriteLine("Cache exist");
-                var content = System.IO.File.ReadAllText("/app/cacheData/admins_cache.json");
-                Dictionary<string, object> adminsInfo = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, object>>(content);
-                List<string> userEGroups = adminsInfo["EGroupNames"] as List<string>;
+                Console.WriteLine("Entering FetchAdmins");
+                // If CacheAdminInfo is asynchronous consider awaiting it properly
+                await Task.Run(() => CacheAdminInfo());
+                Console.WriteLine("Finished FetchAdmins");
 
-                foreach (var admin123 in userEGroups)
+                string filePath = "/app/cacheData/admins_cache.json";
+                if (System.IO.File.Exists(filePath))
                 {
-                    Console.WriteLine(admin123);
-                }
+                    Console.WriteLine("Cache exist");
+                    var content = await System.IO.File.ReadAllTextAsync(filePath);
+                    var adminsInfo = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, object>>(content);
 
-                userEGroups.Add("pstojkov");
-
-                if (userEGroups.Contains(userName))
-                {
-                    return Ok(true);
+                    if (adminsInfo.TryGetValue("EGroupNames", out var eGroupNamesObj))
+                    {
+                        var userEGroups = eGroupNamesObj as List<string>;
+                        if (userEGroups != null && userEGroups.Contains(userName))
+                        {
+                            return Ok(true);
+                        }
+                    }
                 }
             }
-            Console.WriteLine("Cache does not exist");
+            catch (Exception ex)
+            {
+                Console.WriteLine($"An error occurred: {ex.Message}");
+                // You might want to return a different status code here to indicate an error
+            }
+
+            Console.WriteLine("Cache does not exist or user not found in cache");
             return Ok(false);
         }
 
