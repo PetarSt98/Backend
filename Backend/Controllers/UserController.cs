@@ -578,14 +578,11 @@ namespace Backend.Controllers
             try
             {
                 Console.WriteLine("Entering FetchAdmins");
-                // If CacheAdminInfo is asynchronous consider awaiting it properly
                 await Task.Run(() => CacheAdminInfo());
-                Console.WriteLine("Finished FetchAdmins");
 
                 string filePath = "/app/cacheData/admins_cache.json";
                 if (System.IO.File.Exists(filePath))
                 {
-                    Console.WriteLine("Cache exist");
                     var content = await System.IO.File.ReadAllTextAsync(filePath);
                     var adminsInfo = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, object>>(content);
                     List<string> userEGroups = adminsInfo["EGroupNames"] as List<string>;
@@ -594,7 +591,6 @@ namespace Backend.Controllers
                     {
                         if (adminsInfo.TryGetValue("EGroupNames", out var eGroupNamesObj))
                         {
-                            Console.WriteLine("USAO");
                             var jArray = eGroupNamesObj as Newtonsoft.Json.Linq.JArray;
                             if (jArray != null)
                             {
@@ -602,22 +598,19 @@ namespace Backend.Controllers
                             }
                         }
                     }
-                    Console.WriteLine(userEGroups.Count);
-                    userEGroups.Add("pstojkov");
                     if (userEGroups != null && userEGroups.Contains(userName))
                     {
-                        return Ok(true);
+                        return Ok(false);
                     }
                 }
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"An error occurred: {ex.Message}");
-                // You might want to return a different status code here to indicate an error
             }
 
             Console.WriteLine("Cache does not exist or user not found in cache");
-            return Ok(false);
+            return Ok(true);
         }
 
         private async Task CacheAdminInfo()
