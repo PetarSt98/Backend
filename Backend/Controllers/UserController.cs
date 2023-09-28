@@ -562,19 +562,30 @@ namespace Backend.Controllers
         [SwaggerOperation("Fetch all devices of the user.")]
         public async Task<ActionResult<bool>> FetchAdmins(string userName)
         {
+            Console.WriteLine("Entering FetchAdmins");
             Task.Run(() => CacheAdminInfo());
+            Console.WriteLine("Finished FetchAdmins");
 
             if (System.IO.File.Exists("/app/cacheData/admins_cache.json"))
             {
+                Console.WriteLine("Cache exist");
                 var content = System.IO.File.ReadAllText("/app/cacheData/admins_cache.json");
                 Dictionary<string, object> adminsInfo = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, object>>(content);
                 List<string> userEGroups = adminsInfo["EGroupNames"] as List<string>;
+
+                foreach (var admin123 in userEGroups)
+                {
+                    Console.WriteLine(admin123);
+                }
+
+                userEGroups.Add("pstojkov");
+
                 if (userEGroups.Contains(userName))
                 {
                     return Ok(true);
                 }
             }
-
+            Console.WriteLine("Cache does not exist");
             return Ok(false);
         }
 
