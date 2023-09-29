@@ -578,7 +578,7 @@ namespace Backend.Controllers
             try
             {
                 Console.WriteLine("Entering FetchAdmins");
-                await Task.Run(() => CacheAdminInfo());
+                await Task.Run(() => CacheAdminInfo(true));
 
                 string filePath = "/app/cacheData/admins_cache.json";
                 if (System.IO.File.Exists(filePath))
@@ -613,10 +613,10 @@ namespace Backend.Controllers
             return Ok(true);
         }
 
-        private async Task CacheAdminInfo()
+        private async Task CacheAdminInfo(bool load = false)
         {
 
-            if (!System.IO.File.Exists("/app/cacheData/admins_cache.json"))
+            if (!System.IO.File.Exists("/app/cacheData/admins_cache.json") || load)
             {
 
                 try
