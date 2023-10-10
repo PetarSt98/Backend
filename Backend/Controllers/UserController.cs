@@ -152,6 +152,7 @@ namespace Backend.Controllers
     {
         public string UserName { get; set; }
         public string DeviceName { get; set; }
+        public string PrimaryUser { get; set; }
         public string SignedInUser { get; set; }
         public string AddDeviceOrUser { get; set; }
     }
@@ -226,12 +227,12 @@ namespace Backend.Controllers
                     return $"User: {user.UserName} does not exist!";
                 }
 
-                if (user.SignedInUser != "Primary")
+                if (user.PrimaryUser != "Primary")
                 {
                     List<string> primaryAccounts = deviceInfo["PrimaryAccounts"] as List<string>;
-                    if (!primaryAccounts.Contains(user.SignedInUser) && user.AddDeviceOrUser == "user")
+                    if (!primaryAccounts.Contains(user.PrimaryUser) && user.AddDeviceOrUser == "user")
                     {
-                        return $"Signed in user: {user.SignedInUser} is not a primary account!\nOnly primary accounts can manage users!";
+                        return $"Signed in user: {user.PrimaryUser} is not a primary account!\nOnly primary accounts can manage users!";
                     }
                 }
                 if (deviceInfo["Error"] != null)
