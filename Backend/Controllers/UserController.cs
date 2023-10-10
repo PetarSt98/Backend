@@ -769,8 +769,66 @@ namespace Backend.Controllers
         [HttpDelete]
         [Route("remove")]
         [SwaggerOperation("Search for all users of the device")]
-        public async Task<ActionResult<string>> RemoveDevice(string userName, string deviceName)
+        public async Task<ActionResult<string>> RemoveDevice(string userName, string deviceName, string signedInUser, string primaryUser, string addDeviceOrUser)
         {
+
+            if (userName != signedInUser)
+            {
+                Dictionary<string, object> deviceInfo = await UserController.ExecuteSOAPServiceApi(userName, deviceName, "false");
+
+                if (deviceInfo == null)
+                {
+                    return $"Device: {deviceName} does not exist!";
+                }
+
+                if (deviceInfo["validUser"] as string != userName)
+                {
+                    return $"User: {userName} does not exist!";
+                }
+
+                if (primaryUser != "Primary")
+                {
+                    List<string> primaryAccounts = deviceInfo["PrimaryAccounts"] as List<string>;
+                    if (!primaryAccounts.Contains(primaryUser) && addDeviceOrUser == "user")
+                    {
+                        return $"Signed in user: {primaryUser} is not a primary account!\nOnly primary accounts can manage users!";
+                    }
+                }
+
+                if (deviceInfo["Error"] != null)
+                {
+                    return deviceInfo["Error"] as string;
+                }
+                string responsiblePersonUsername;
+                if ((deviceInfo["UserPersonFirstName"] as string).Contains("E-GROUP"))
+                {
+                    responsiblePersonUsername = deviceInfo["ResponsiblePersonName"] as string;
+                }
+                else
+                {
+                    responsiblePersonUsername = deviceInfo["ResponsiblePersonUsername"] as string;
+                }
+                string userPersonUsername = deviceInfo["UserPersonUsername"] as string;
+
+                if (responsiblePersonUsername == null || userPersonUsername == null)
+                {
+                    return $"Error: Could not retrieve ownership data for the device: {deviceName}";
+                }
+
+                List<string> userEGroups = deviceInfo["EGroupNames"] as List<string>;
+                if (userEGroups?.Contains(userName) != true)
+                {
+                    if (userName != responsiblePersonUsername && userName != userPersonUsername && addDeviceOrUser == "device")
+                    {
+                        return $"User: {userName} is not an owner or a user of the device: {deviceName}!";
+                    }
+
+                    if (signedInUser != responsiblePersonUsername && signedInUser != userPersonUsername && addDeviceOrUser == "user")
+                    {
+                        return $"User: {signedInUser} is not an owner or a main user of the device: {deviceName}!";
+                    }
+                }
+            }
             try
             {
                 using (var db = new RapContext())
