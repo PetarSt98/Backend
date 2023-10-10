@@ -205,11 +205,11 @@ namespace Backend.Controllers
                     {
                         if (user.AddDeviceOrUser == "device")
                         {
-                            return "Device already exists!";
+                            return "Device already exists in the list below!";
                         }
                         else if (user.AddDeviceOrUser == "user")
                         {
-                            return "User already exists!";
+                            return "User already exists in the list below!";
                         }
                     }
                 }
@@ -257,11 +257,12 @@ namespace Backend.Controllers
                 List<string> userEGroups = deviceInfo["EGroupNames"] as List<string>;
                 if (userEGroups?.Contains(user.UserName) != true)
                 {
-                    if (user.UserName != responsiblePersonUsername && user.UserName != userPersonUsername && user.AddDeviceOrUser == "device")
+                    if (user.UserName != responsiblePersonUsername && user.UserName != userPersonUsername)
                     {
-                        return $"User: {user.UserName} is not an owner or a user of the device: {user.DeviceName}!";
+                        return $"User: {user.UserName} is not an owner or a main user of the device: {user.DeviceName}!";
                     }
                 }
+
                 using (var db = new RapContext())
                 {
                     string rapName = "RAP_" + user.UserName;
