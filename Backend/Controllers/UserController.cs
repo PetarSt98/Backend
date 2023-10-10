@@ -257,9 +257,14 @@ namespace Backend.Controllers
                 List<string> userEGroups = deviceInfo["EGroupNames"] as List<string>;
                 if (userEGroups?.Contains(user.UserName) != true)
                 {
-                    if (user.UserName != responsiblePersonUsername && user.UserName != userPersonUsername)
+                    if (user.UserName != responsiblePersonUsername && user.UserName != userPersonUsername && user.AddDeviceOrUser == "device")
                     {
-                        return $"User: {user.UserName} is not an owner or a main user of the device: {user.DeviceName}!";
+                        return $"User: {user.UserName} is not an owner or a user of the device: {user.DeviceName}!";
+                    }
+
+                    if (user.SignedInUser != responsiblePersonUsername && user.SignedInUser != userPersonUsername && user.AddDeviceOrUser == "user")
+                    {
+                        return $"User: {user.SignedInUser} is not an owner or a main user of the device: {user.DeviceName}!";
                     }
                 }
 
