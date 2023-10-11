@@ -839,9 +839,15 @@ namespace Backend.Controllers
                     var resources_to_delete = db.rap_resource
                         .Where(r =>
                             ((r.resourceName == deviceName) &&
-                            (r.RAPName == rapName || r.resourceOwner == rapOwner) && !r.toDelete)
+                            (r.RAPName == rapName) && !r.toDelete)
                         )
                         .ToList();
+                    //var resources_to_delete = db.rap_resource
+                    //    .Where(r =>
+                    //        ((r.resourceName == deviceName) &&
+                    //        (r.RAPName == rapName || r.resourceOwner == rapOwner) && !r.toDelete)
+                    //    )
+                    //    .ToList();
 
                     if (resources_to_delete.Any())
                     {
