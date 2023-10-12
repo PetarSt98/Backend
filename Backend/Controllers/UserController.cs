@@ -684,6 +684,40 @@ namespace Backend.Controllers
 
             //return Ok(statuses);
         }
+        
+        [Authorize]
+        [HttpPost]
+        [Route("date_check")]
+        [SwaggerOperation("Check all devices of the user.")]
+        public async Task<ActionResult<IEnumerable<string>>> DateDevices([FromBody] DeviceCheckRequest request)
+        {
+            Dictionary<string, string> deviceDates = new Dictionary<string, string>();
+            string userName = request.UserName;
+
+            try
+            {
+                using (var db = new RapContext())
+                {
+                    var rap_resources = GetRapByRAPName(db, AddRAPToUser(userName)).ToList();
+                    //rap_resources.AddRange(GetRapByResourceOwner(db, AddDomainToRapOwner(userName)).ToList());
+
+                    foreach (var resource in rap_resources.Where(r => !r.toDelete))
+                    {
+                        // If the resourceName is not already added, add the resourceName with its date
+                        if (!deviceDates.ContainsKey(resource.resourceName))
+                        {
+                            deviceDates[resource.resourceName] = string.Format("{0:yyyy-MM-dd HH:mm:ss}", resource.createDate);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex}");
+            }
+
+            return Ok(deviceDates.Values.ToList());
+        }
 
         [Authorize]
         [HttpPost]
