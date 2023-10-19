@@ -661,7 +661,7 @@ namespace Backend.Controllers
         [SwaggerOperation("Check all devices of the user.")]
         public async Task<ActionResult<IEnumerable<bool>>> CheckDevices([FromBody] DeviceCheckRequest request)
         {
-            List<bool> devices = new List<bool>();
+            Dictionary<string, bool> deviceStatuses = new Dictionary<string, bool>();
             string userName = request.UserName;
             try
             {
@@ -669,7 +669,17 @@ namespace Backend.Controllers
                 {
                     var rap_resources = GetRapByRAPName(db, AddRAPToUser(userName)).ToList();
                     //rap_resources.AddRange(GetRapByResourceOwner(db, AddDomainToRapOwner(userName)).ToList());
-                    devices.AddRange(rap_resources.Where(r => !r.toDelete).Select(r => r.synchronized && !r.exception.GetValueOrDefault()).ToList());
+                    //devices.AddRange(rap_resources.Where(r => !r.toDelete).Select(r => r.synchronized && !r.exception.GetValueOrDefault()).ToList());
+                    bool status;
+                    foreach (var resource in rap_resources.Where(r => !r.toDelete))
+                    {
+                        if (!deviceStatuses.ContainsKey(resource.resourceName))
+                        {
+
+                            status = resource.synchronized && !resource.exception.GetValueOrDefault();
+                            deviceStatuses[resource.resourceName] = status;
+                        }
+                    }
                 }
             }
             catch (Exception ex)
@@ -677,7 +687,7 @@ namespace Backend.Controllers
                 return StatusCode(500, $"Internal server error: {ex}");
             }
 
-            return Ok(devices);
+            return Ok(deviceStatuses.Values.ToList());
 
 
             //List<bool> statuses = new List<bool>(new bool[request.DeviceNames.Count]);
