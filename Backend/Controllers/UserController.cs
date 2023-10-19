@@ -162,8 +162,8 @@ namespace Backend.Controllers
     [ApiController]
     public class UserController : ControllerBase
     {
-        private const string username = "pstojkov";
-        private const string password = "GeForce9800GT.";
+        //private const string username = "";
+        //private const string password = ".";
         private readonly IUserService _userSearcher;
 
         public UserController(IUserService userService)
@@ -402,7 +402,7 @@ namespace Backend.Controllers
                 using (var process = new Process())
                 {
                     process.StartInfo.FileName = "python2.7";
-                    process.StartInfo.Arguments = $"{pathToScript} {userName} {computerName} {username} {password} {adminsOnly} cernts-TSgateway-AllowedNonPrimaryAccount";
+                    process.StartInfo.Arguments = $"{pathToScript} {userName} {computerName} {adminsOnly} cernts-TSgateway-AllowedNonPrimaryAccount";
                     process.StartInfo.UseShellExecute = false;
                     process.StartInfo.RedirectStandardOutput = true;
                     process.StartInfo.RedirectStandardError = true;
@@ -541,8 +541,8 @@ namespace Backend.Controllers
     [ApiController]
     public class UserDevicesController : ControllerBase
     {
-        private const string username = "pstojkov";
-        private const string password = "GeForce9800GT.";
+        //private const string username = "";
+        //private const string password = ".";
         private readonly IUserService _userSearcher;
 
         public UserDevicesController(IUserService userService)
