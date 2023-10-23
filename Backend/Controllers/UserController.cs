@@ -227,6 +227,11 @@ namespace Backend.Controllers
                     return $"User: {user.UserName} does not exist!";
                 }
 
+                if (deviceInfo["domain"] as string != "OK")
+                {
+                    return $"The Network Domain(s) of the device {user.DeviceName} are not allowed!";
+                }
+
                 if (user.PrimaryUser != "Primary")
                 {
                     List<string> primaryAccounts = deviceInfo["PrimaryAccounts"] as List<string>;
@@ -417,25 +422,28 @@ namespace Backend.Controllers
                             continue;
                         }
 
-                        if (result.Count < 5 && adminsOnly == "false")
+                        if (result.Count < 6 && adminsOnly == "false")
                         {
-                            string username = line.Replace("'", "").Replace("\r", "").Replace("\n", "");
+                            string data = line.Replace("'", "").Replace("\r", "").Replace("\n", "");
                             switch(result.Count)
                             {
                                 case 0:
-                                    result["ResponsiblePersonName"] = username;
+                                    result["ResponsiblePersonName"] = data;
                                     break;
                                 case 1:
-                                    result["UserPersonFirstName"] = username;
+                                    result["UserPersonFirstName"] = data;
                                     break;
                                 case 2:
-                                    result["UserPersonUsername"] = username;
+                                    result["UserPersonUsername"] = data;
                                     break;
                                 case 3:
-                                    result["ResponsiblePersonUsername"] = username;
+                                    result["ResponsiblePersonUsername"] = data;
                                     break;
                                 case 4:
-                                    result["validUser"] = username;
+                                    result["validUser"] = data;
+                                    break;
+                                case 5:
+                                    result["domain"] = data;
                                     break;
                                 default:
                                     throw new Exception("SOAP py error!");

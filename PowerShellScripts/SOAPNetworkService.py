@@ -72,6 +72,17 @@ if (admins_only_flag == 'false'):
         pprint(user_info)
         pprint(owner_info)
         pprint(user_full_name)
+	if (result.Interfaces != None):
+		not_ok_flag = True
+		for interface in result.Interfaces:
+    			if (interface.NetworkDomainName in ["GPN", "LCG", "ITS", "LHCB"]):
+				pprint("OK")
+				not_ok_flag = False
+				break
+		if (not_ok_flag):
+			pprint("NOT OK")
+    	else:
+		pprint("OK")
 
 ldapsearch_groups_cmd = 'ldapsearch -z 0 -E pr=1000/noprompt -LLL -x -h "xldap.cern.ch" -b "DC=cern,DC=ch" "(&(objectClass=group)(cn=NICE Local Administrators Managers))" member'
 
