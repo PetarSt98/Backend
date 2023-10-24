@@ -17,6 +17,9 @@ client = Client(url, doctor=doc, cache=None)
 # password = sys.argv[4] if len(sys.argv) > 3 else exit("Please specify the password")
 username = os.environ.get('USERNAME')
 password = os.environ.get('PASSWORD')
+allowed_domains_str = os.environ.get('ALLOWED_DOMAINS')
+allowed_domains = allowed_domains_str .split(',')
+ 
 admins_only_flag = sys.argv[3] if len(sys.argv) > 2 else exit("Please specify the adminsOnly flag")
 # e_group_primary = sys.argv[6] if len(sys.argv) > 5 else exit("Please specify the egroup for primary accounts")
 e_group_non_primary = sys.argv[4] if len(sys.argv) > 3 else exit("Please specify the egroup for exceptions of non-primary accounts")
@@ -75,7 +78,7 @@ if (admins_only_flag == 'false'):
 	if (result.Interfaces != None):
 		not_ok_flag = True
 		for interface in result.Interfaces:
-    			if (interface.NetworkDomainName in ["GPN", "LCG", "ITS", "LHCB"]):
+    			if (interface.NetworkDomainName in allowed_domains):
 				pprint("OK")
 				not_ok_flag = False
 				break
