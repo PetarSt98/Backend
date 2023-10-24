@@ -19,10 +19,12 @@ username = os.environ.get('USERNAME')
 password = os.environ.get('PASSWORD')
 allowed_domains_str = os.environ.get('ALLOWED_DOMAINS')
 allowed_domains = allowed_domains_str .split(',')
- 
+e_group_non_primary = os.environ.get('NON_PRIMARY_EGROUP')
+e_group_admins = os.environ.get('ADMINS_EGROUP')
+
 admins_only_flag = sys.argv[3] if len(sys.argv) > 2 else exit("Please specify the adminsOnly flag")
 # e_group_primary = sys.argv[6] if len(sys.argv) > 5 else exit("Please specify the egroup for primary accounts")
-e_group_non_primary = sys.argv[4] if len(sys.argv) > 3 else exit("Please specify the egroup for exceptions of non-primary accounts")
+# e_group_non_primary = sys.argv[4] if len(sys.argv) > 3 else exit("Please specify the egroup for exceptions of non-primary accounts")
 
 if (admins_only_flag != 'false' and admins_only_flag != "true"):
         exit("Please specify the adminsOnly flag as string true or false")
@@ -87,7 +89,7 @@ if (admins_only_flag == 'false'):
     	else:
 		pprint("OK")
 
-ldapsearch_groups_cmd = 'ldapsearch -z 0 -E pr=1000/noprompt -LLL -x -h "xldap.cern.ch" -b "DC=cern,DC=ch" "(&(objectClass=group)(cn=NICE Local Administrators Managers))" member'
+ldapsearch_groups_cmd = 'ldapsearch -z 0 -E pr=1000/noprompt -LLL -x -h "xldap.cern.ch" -b "DC=cern,DC=ch" "(&(objectClass=group)(cn={0}))" member'.format(e_group_admins)
 
 # dfsmigapp01
 
