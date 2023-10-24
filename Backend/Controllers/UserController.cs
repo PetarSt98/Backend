@@ -407,7 +407,7 @@ namespace Backend.Controllers
                 using (var process = new Process())
                 {
                     process.StartInfo.FileName = "python2.7";
-                    process.StartInfo.Arguments = $"{pathToScript} {userName} {computerName} {adminsOnly} cernts-TSgateway-AllowedNonPrimaryAccount";
+                    process.StartInfo.Arguments = $"{pathToScript} {userName} {computerName} {adminsOnly}";
                     process.StartInfo.UseShellExecute = false;
                     process.StartInfo.RedirectStandardOutput = true;
                     process.StartInfo.RedirectStandardError = true;
