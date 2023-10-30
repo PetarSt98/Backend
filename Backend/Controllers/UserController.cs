@@ -707,9 +707,9 @@ namespace Backend.Controllers
         [HttpPost]
         [Route("date_check")]
         [SwaggerOperation("Check all devices of the user.")]
-        public async Task<ActionResult<IEnumerable<string>>> DateDevices([FromBody] DeviceCheckRequest request)
+        public async Task<ActionResult<IEnumerable<object>>> DateDevices([FromBody] DeviceCheckRequest request)
         {
-            Dictionary<string, string> deviceDates = new Dictionary<string, string>();
+            Dictionary<string, object> deviceDates = new Dictionary<string, object>();
             string userName = request.UserName;
 
             try
@@ -724,7 +724,12 @@ namespace Backend.Controllers
                         // If the resourceName is not already added, add the resourceName with its date
                         if (!deviceDates.ContainsKey(resource.resourceName))
                         {
-                            deviceDates[resource.resourceName] = string.Format("{0:yyyy-MM-dd HH:mm:ss}", resource.createDate);
+                            //deviceDates[resource.resourceName] = string.Format("{0:yyyy-MM-dd HH:mm:ss}", resource.createDate);
+                            deviceDates[resource.resourceName] = (new
+                            {
+                                createDate = string.Format("{0:yyyy-MM-dd HH:mm:ss}", resource.createDate),
+                                updateDate = string.Format("{0:yyyy-MM-dd HH:mm:ss}", resource.updateDate)
+                            });
                         }
                     }
                 }
