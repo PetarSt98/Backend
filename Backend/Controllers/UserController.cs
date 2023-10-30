@@ -341,6 +341,7 @@ namespace Backend.Controllers
                     else if (existingToDeleteRapResource != null && existingRapResource == null)
                     {
                         existingToDeleteRapResource.toDelete = false;
+                        existingToDeleteRapResource.updateDate = DateTime.Now;
                     }
                     else 
                     {
@@ -784,7 +785,6 @@ namespace Backend.Controllers
             {
                 using (var db = new RapContext())
                 {
-
                     string rapName = AddRAPToUser(userName);
 
                     var resourceses = db.rap_resource
@@ -800,6 +800,7 @@ namespace Backend.Controllers
                         {
                             resource.exception = false;
                             resource.synchronized = true;
+                            resource.updateDate = DateTime.Now;
                         }
 
                         db.SaveChanges();
