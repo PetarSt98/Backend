@@ -44,36 +44,43 @@ if (admins_only_flag == 'false'):
 
         # Define ldapsearch command
         ldapsearch_base_cmd = 'ldapsearch -z 0 -E pr=1000/noprompt -LLL -x -h "xldap.cern.ch" -b "OU=Users,OU=Organic Units,DC=cern,DC=ch" "(&(objectClass=user)(mail=%s))" cn | grep \'^cn: \' | sed \'s/^cn: //\''
+	
+	if (result.ResponsiblePerson is not None):
+        	# Get user information by email from LDAP using ldapsearch
+        	owner_search_cmd = ldapsearch_base_cmd % result.ResponsiblePerson.Email
+        	owner_info_process = subprocess.Popen(owner_search_cmd, stdout=subprocess.PIPE, shell=True)
+        	owner_info = owner_info_process.communicate()[0].strip()
+	else:
+		owner_info = ''
+	
+	if (result.UserPerson is not None):
+        	user_search_cmd = ldapsearch_base_cmd % result.UserPerson.Email
+        	user_info_process = subprocess.Popen(user_search_cmd, stdout=subprocess.PIPE, shell=True)
+        	user_info = user_info_process.communicate()[0].strip()
 
-        # Get user information by email from LDAP using ldapsearch
-        owner_search_cmd = ldapsearch_base_cmd % result.ResponsiblePerson.Email
-        owner_info_process = subprocess.Popen(owner_search_cmd, stdout=subprocess.PIPE, shell=True)
-        owner_info = owner_info_process.communicate()[0].strip()
-
-        user_search_cmd = ldapsearch_base_cmd % result.UserPerson.Email
-        user_info_process = subprocess.Popen(user_search_cmd, stdout=subprocess.PIPE, shell=True)
-        user_info = user_info_process.communicate()[0].strip()
 
         # pprint(result.ResponsiblePerson.Name)
         # pprint(result.UserPerson.FirstName)
-
-        if ('E-GROUP' in result.UserPerson.FirstName):
-                ldapsearch_groups_cmd = 'ldapsearch -z 0 -E pr=1000/noprompt -LLL -x -h "xldap.cern.ch" -b "DC=cern,DC=ch" "(&(objectClass=group)(cn={0}))" member'.format(result.ResponsiblePerson.Name)
-                group_members_process = subprocess.Popen(ldapsearch_groups_cmd, stdout=subprocess.PIPE, shell=True)
-                group_members = group_members_process.communicate()[0].strip()
-                #print(group_members)
-                egroups = group_members
-                for group_member in group_members.splitlines():
-                        if (userName in group_member):
-                                user_info = userName
+	
+        	if ('E-GROUP' in result.UserPerson.FirstName):
+                	ldapsearch_groups_cmd = 'ldapsearch -z 0 -E pr=1000/noprompt -LLL -x -h "xldap.cern.ch" -b "DC=cern,DC=ch" "(&(objectClass=group)(cn={0}))" member'.format(result.ResponsiblePerson.Name)
+                	group_members_process = subprocess.Popen(ldapsearch_groups_cmd, stdout=subprocess.PIPE, shell=True)
+                	group_members = group_members_process.communicate()[0].strip()
+                	#print(group_members)
+                	egroups = group_members
+                	for group_member in group_members.splitlines():
+                        	if (userName in group_member):
+                                	user_info = userName
+	else:
+		user_info = ''
         ldapsearch_user_name_cmd = 'ldapsearch -z 0 -E pr=1000/noprompt -LLL -x -h "xldap.cern.ch" -b "OU=Users,OU=Organic Units,DC=cern,DC=ch" "(&(objectClass=user)(sAMAccountName=%s))" cn | grep \'^cn: \' | sed \'s/^cn: //\'' % userName
 
         # Get user's full name using ldapsearch
         user_name_process = subprocess.Popen(ldapsearch_user_name_cmd, stdout=subprocess.PIPE, shell=True)
         user_full_name = user_name_process.communicate()[0].strip()
 
-        pprint(result.ResponsiblePerson.Name)
-        pprint(result.UserPerson.FirstName)
+        pprint(result.ResponsiblePerson.Name if result.ResponsiblePerson is not None else '')
+        pprint(result.UserPerson.FirstName if result.UserPerson is not None else '')
         pprint(user_info)
         pprint(owner_info)
         pprint(user_full_name)
