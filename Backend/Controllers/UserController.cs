@@ -274,6 +274,11 @@ namespace Backend.Controllers
                     }
                 }
 
+                if (responsiblePersonUsername.Length == 0 || responsiblePersonUsername == null)
+                {
+                    return $"The device: {user.DeviceName} does not have the responsible person (owner)!";
+                }
+
                 using (var db = new RapContext())
                 {
                     string rapName = "RAP_" + user.UserName;
