@@ -301,7 +301,8 @@ namespace Backend.Controllers
                             resourceGroupName = resourceGroupName,
                             synchronized = false,
                             lastModified = DateTime.Now,
-                            toDelete = false
+                            toDelete = false,
+                            unsynchronizedGateways = ""
                         };
 
                         db.raps.Add(newRap);
@@ -338,7 +339,9 @@ namespace Backend.Controllers
                             exception = false,
                             createDate = DateTime.Now,
                             updateDate = DateTime.Now,
-                            toDelete = false
+                            toDelete = false,
+                            unsynchronizedGateways = ""
+                            
                         };
 
                         db.rap_resource.Add(newRapResource);
