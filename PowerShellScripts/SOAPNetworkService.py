@@ -6,7 +6,36 @@ from suds.client import Client
 from suds.sax.element import Element
 from suds.xsd.doctor import ImportDoctor, Import
 from pprint import pprint
+import re
 
+def ldapsearch_group_members(group_name):
+    ldapsearch_cmd = (
+        'ldapsearch -z 0 -E pr=1000/noprompt -LLL -x -h "xldap.cern.ch" '
+        '-b "DC=cern,DC=ch" "(&(objectClass=group)(cn={}))" member'.format(group_name)
+    )
+    process = subprocess.Popen(ldapsearch_cmd, stdout=subprocess.PIPE, shell=True)
+    output, _ = process.communicate()
+    return output.decode()
+
+def get_group_members(group_output):
+    members = []
+    for line in group_output.splitlines():
+        if line.startswith("member:"):
+            member = line.split(":", 1)[1].strip()
+            members.append(member)
+    return members
+
+def expand_groups(members):
+    all_members = set()
+    for member in members:
+        if "OU=e-groups" in member:
+            group_name = re.search("CN=([^,]+),", member)
+            if group_name:
+                nested_group_members = ldapsearch_group_members(group_name.group(1))
+                all_members.update(expand_groups(get_group_members(nested_group_members)))
+        else:
+            all_members.add(member)
+    return all_members
 # Client setup
 url = 'https://network.cern.ch/sc/soap/soap.fcgi?v=6&WSDL'
 imp = Import('http://schemas.xmlsoap.org/soap/encoding/')
@@ -96,14 +125,21 @@ if (admins_only_flag == 'false'):
     	else:
 		pprint("OK")
 
-ldapsearch_groups_cmd = 'ldapsearch -z 0 -E pr=1000/noprompt -LLL -x -h "xldap.cern.ch" -b "DC=cern,DC=ch" "(&(objectClass=group)(cn={0}))" member'.format(e_group_admins)
+# ldapsearch_groups_cmd = 'ldapsearch -z 0 -E pr=1000/noprompt -LLL -x -h "xldap.cern.ch" -b "DC=cern,DC=ch" "(&(objectClass=group)(cn={0}))" member'.format(e_group_admins)
 
-# dfsmigapp01
+# # dfsmigapp01
 
-group_members_process = subprocess.Popen(ldapsearch_groups_cmd, stdout=subprocess.PIPE, shell=True)
-group_members = group_members_process.communicate()[0].strip()
+# group_members_process = subprocess.Popen(ldapsearch_groups_cmd, stdout=subprocess.PIPE, shell=True)
+# group_members = group_members_process.communicate()[0].strip()
 
-print(group_members)
+# print(group_members)
+
+initial_group_members = ldapsearch_group_members(e_group_admins)
+members = get_group_members(initial_group_members)
+all_members = expand_groups(members)
+
+for member in sorted(all_members):
+    print(member)
 print("-------------------------")
 print(egroups)
 
