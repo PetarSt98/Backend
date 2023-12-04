@@ -79,6 +79,17 @@ if (admins_only_flag == 'false'):
         	owner_search_cmd = ldapsearch_base_cmd % result.ResponsiblePerson.Email
         	owner_info_process = subprocess.Popen(owner_search_cmd, stdout=subprocess.PIPE, shell=True)
         	owner_info = owner_info_process.communicate()[0].strip()
+                if ('E-GROUP' in result.ResponsiblePerson.FirstName):
+                        ldapsearch_groups_cmd = 'ldapsearch -z 0 -E pr=1000/noprompt -LLL -x -h "xldap.cern.ch" -b "DC=cern,DC=ch" "(&(objectClass=group)(cn={0}))" member'.format(result.ResponsiblePerson.Name)
+                        group_members_process = subprocess.Popen(ldapsearch_groups_cmd, stdout=subprocess.PIPE, shell=True)
+                        group_members = group_members_process.communicate()[0].strip()
+                        #print(group_members)
+                        for group_member in group_members.splitlines():
+                                if (userName in group_member):
+                                        owner_info = userName
+                                        break
+                                else:
+                                        owner_info = result.ResponsiblePerson.Name
 	else:
 		owner_info = ''
 	
@@ -92,7 +103,7 @@ if (admins_only_flag == 'false'):
         # pprint(result.UserPerson.FirstName)
 	
         	if ('E-GROUP' in result.UserPerson.FirstName):
-                	ldapsearch_groups_cmd = 'ldapsearch -z 0 -E pr=1000/noprompt -LLL -x -h "xldap.cern.ch" -b "DC=cern,DC=ch" "(&(objectClass=group)(cn={0}))" member'.format(result.ResponsiblePerson.Name)
+                	ldapsearch_groups_cmd = 'ldapsearch -z 0 -E pr=1000/noprompt -LLL -x -h "xldap.cern.ch" -b "DC=cern,DC=ch" "(&(objectClass=group)(cn={0}))" member'.format(result.UserPerson.Name)
                 	group_members_process = subprocess.Popen(ldapsearch_groups_cmd, stdout=subprocess.PIPE, shell=True)
                 	group_members = group_members_process.communicate()[0].strip()
                 	#print(group_members)
