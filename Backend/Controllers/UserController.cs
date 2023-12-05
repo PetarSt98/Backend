@@ -33,7 +33,8 @@ namespace Backend.Controllers
             {
                 using (var db = new RapContext())
                 {
-                    var rap_resources = GetRapByResourceName(db, userName, deviceName, fetchToDeleteResource).ToList();
+                    var rap_resources = (await GetRapByResourceName(db, userName, deviceName, fetchToDeleteResource)).ToList();
+
                     //users.AddRange(rap_resources.Select(r => RemoveDomainFromRapOwner(r.resourceOwner)).ToList());
                     users.AddRange(rap_resources.Select(r => RemoveRAPFromUser(r.RAPName)).ToList());
                 }
@@ -55,7 +56,7 @@ namespace Backend.Controllers
             return Ok(new HashSet<string>(users));
         }
 
-        private IEnumerable<rap_resource> GetRapByResourceName(RapContext db, string userName, string resourceName, bool fetchToDeleteResource)
+        private async Task<IEnumerable<rap_resource>> GetRapByResourceName(RapContext db, string userName, string resourceName, bool fetchToDeleteResource)
         {
             try
             {
@@ -119,7 +120,56 @@ namespace Backend.Controllers
 
                 if (fetched_resources.Count() == 0)
                 {
-                    throw new InvalidFetchingException($"User: {userName} is not an owner or a user of the Device: {resourceName}!");
+                    Dictionary<string, object> deviceInfo = await UserController.ExecuteSOAPServiceApi(userName, resourceName, "false");
+
+                    if (deviceInfo == null)
+                    {
+                        throw new InvalidFetchingException($"Device: {resourceName} does not exist!");
+                    }
+
+                    if (deviceInfo["validUser"] as string != userName)
+                    {
+                        throw new InvalidFetchingException($"User: {userName} does not exist!");
+                    }
+
+                    if (deviceInfo["domain"] as string != "OK")
+                    {
+                        throw new InvalidFetchingException($"The Network Domain(s) of the device {resourceName} are not allowed!");
+                    }
+
+                    if (deviceInfo["Error"] != null)
+                    {
+                        throw new InvalidFetchingException(deviceInfo["Error"] as string);
+                    }
+
+                    string responsiblePersonUsername;
+                    if ((deviceInfo["UserPersonFirstName"] as string).Contains("E-GROUP"))
+                    {
+                        responsiblePersonUsername = deviceInfo["ResponsiblePersonName"] as string;
+                    }
+                    else
+                    {
+                        responsiblePersonUsername = deviceInfo["ResponsiblePersonUsername"] as string;
+                    }
+                    string userPersonUsername = deviceInfo["UserPersonUsername"] as string;
+
+                    if (responsiblePersonUsername == null || userPersonUsername == null)
+                    {
+                        throw new InvalidFetchingException($"Error: Could not retrieve ownership data for the device: {resourceName}");
+                    }
+
+                    List<string> userEGroups_search = deviceInfo["EGroupNames"] as List<string>;
+
+                    if (userEGroups_search?.Contains(userName) != true)
+                    {
+                        if (userName != responsiblePersonUsername && userName != userPersonUsername)
+                        {
+                            throw new InvalidFetchingException($"User: {userName} is not an owner or a user of the device: {resourceName}!");
+                        }
+                    }
+
+
+                    //throw new InvalidFetchingException($"User: {userName} is not an owner or a user of the Device: {resourceName}!");
                 }
 
                 return fetched_resources_all_users;
