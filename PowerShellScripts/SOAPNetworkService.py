@@ -36,6 +36,15 @@ def expand_groups(members):
         else:
             all_members.add(member)
     return all_members
+
+def flatten_nested_egroups(members):
+        while True:
+                flattened_members = expand_groups(members)
+                if (len(members) == len(flattened_members)):
+                        return members
+                members = flattened_members
+
+
 # Client setup
 url = 'https://network.cern.ch/sc/soap/soap.fcgi?v=6&WSDL'
 imp = Import('http://schemas.xmlsoap.org/soap/encoding/')
@@ -73,46 +82,46 @@ if (admins_only_flag == 'false'):
 
         # Define ldapsearch command
         ldapsearch_base_cmd = 'ldapsearch -z 0 -E pr=1000/noprompt -LLL -x -h "xldap.cern.ch" -b "OU=Users,OU=Organic Units,DC=cern,DC=ch" "(&(objectClass=user)(mail=%s))" cn | grep \'^cn: \' | sed \'s/^cn: //\''
-	
-	if (result.ResponsiblePerson is not None):
-        	# Get user information by email from LDAP using ldapsearch
-        	owner_search_cmd = ldapsearch_base_cmd % result.ResponsiblePerson.Email
-        	owner_info_process = subprocess.Popen(owner_search_cmd, stdout=subprocess.PIPE, shell=True)
-        	owner_info = owner_info_process.communicate()[0].strip()
+
+        if (result.ResponsiblePerson is not None):
+                # Get user information by email from LDAP using ldapsearch
+                owner_search_cmd = ldapsearch_base_cmd % result.ResponsiblePerson.Email
+                owner_info_process = subprocess.Popen(owner_search_cmd, stdout=subprocess.PIPE, shell=True)
+                owner_info = owner_info_process.communicate()[0].strip()
+
                 if ('E-GROUP' in result.ResponsiblePerson.FirstName):
-                        ldapsearch_groups_cmd = 'ldapsearch -z 0 -E pr=1000/noprompt -LLL -x -h "xldap.cern.ch" -b "DC=cern,DC=ch" "(&(objectClass=group)(cn={0}))" member'.format(result.ResponsiblePerson.Name)
-                        group_members_process = subprocess.Popen(ldapsearch_groups_cmd, stdout=subprocess.PIPE, shell=True)
-                        group_members = group_members_process.communicate()[0].strip()
-                        #print(group_members)
-                        for group_member in group_members.splitlines():
+                        initial_group_members = ldapsearch_group_members(result.ResponsiblePerson.Name)
+                        members = get_group_members(initial_group_members)
+                        group_members = expand_groups(members)
+                        for group_member in group_members:
                                 if (userName in group_member):
                                         owner_info = userName
-                                        break
+					break
                                 else:
                                         owner_info = result.ResponsiblePerson.Name
-	else:
-		owner_info = ''
-	
-	if (result.UserPerson is not None):
-        	user_search_cmd = ldapsearch_base_cmd % result.UserPerson.Email
-        	user_info_process = subprocess.Popen(user_search_cmd, stdout=subprocess.PIPE, shell=True)
-        	user_info = user_info_process.communicate()[0].strip()
+        else:
+                owner_info = ''
+
+        if (result.UserPerson is not None):
+                user_search_cmd = ldapsearch_base_cmd % result.UserPerson.Email
+                user_info_process = subprocess.Popen(user_search_cmd, stdout=subprocess.PIPE, shell=True)
+                user_info = user_info_process.communicate()[0].strip()
 
 
         # pprint(result.ResponsiblePerson.Name)
         # pprint(result.UserPerson.FirstName)
-	
-        	if ('E-GROUP' in result.UserPerson.FirstName):
-                	ldapsearch_groups_cmd = 'ldapsearch -z 0 -E pr=1000/noprompt -LLL -x -h "xldap.cern.ch" -b "DC=cern,DC=ch" "(&(objectClass=group)(cn={0}))" member'.format(result.UserPerson.Name)
-                	group_members_process = subprocess.Popen(ldapsearch_groups_cmd, stdout=subprocess.PIPE, shell=True)
-                	group_members = group_members_process.communicate()[0].strip()
-                	#print(group_members)
-                	egroups = group_members
-                	for group_member in group_members.splitlines():
-                        	if (userName in group_member):
-                                	user_info = userName
-	else:
-		user_info = ''
+
+                if ('E-GROUP' in result.UserPerson.FirstName):
+                        initial_group_members = ldapsearch_group_members(result.UserPerson.Name)
+                        members = get_group_members(initial_group_members)
+                        group_members = expand_groups(members)
+                        #print(group_members)
+                        egroups = group_members
+                        for group_member in group_members:
+                                if (userName in group_member):
+                                        user_info = userName
+        else:
+                user_info = ''
         ldapsearch_user_name_cmd = 'ldapsearch -z 0 -E pr=1000/noprompt -LLL -x -h "xldap.cern.ch" -b "OU=Users,OU=Organic Units,DC=cern,DC=ch" "(&(objectClass=user)(sAMAccountName=%s))" cn | grep \'^cn: \' | sed \'s/^cn: //\'' % userName
 
         # Get user's full name using ldapsearch
@@ -124,17 +133,17 @@ if (admins_only_flag == 'false'):
         pprint(user_info)
         pprint(owner_info)
         pprint(user_full_name)
-	if (result.Interfaces != None):
-		not_ok_flag = True
-		for interface in result.Interfaces:
-    			if (interface.NetworkDomainName in allowed_domains):
-				pprint("OK")
-				not_ok_flag = False
-				break
-		if (not_ok_flag):
-			pprint("NOT OK")
-    	else:
-		pprint("OK")
+        if (result.Interfaces != None):
+                not_ok_flag = True
+                for interface in result.Interfaces:
+                        if (interface.NetworkDomainName in allowed_domains):
+                                pprint("OK")
+                                not_ok_flag = False
+                                break
+                if (not_ok_flag):
+                        pprint("NOT OK")
+        else:
+                pprint("OK")
 
 # ldapsearch_groups_cmd = 'ldapsearch -z 0 -E pr=1000/noprompt -LLL -x -h "xldap.cern.ch" -b "DC=cern,DC=ch" "(&(objectClass=group)(cn={0}))" member'.format(e_group_admins)
 
@@ -147,12 +156,18 @@ if (admins_only_flag == 'false'):
 
 initial_group_members = ldapsearch_group_members(e_group_admins)
 members = get_group_members(initial_group_members)
-all_members = expand_groups(members)
+all_members = flatten_nested_egroups(members)
 
 for member in sorted(all_members):
     print(member)
 print("-------------------------")
-print(egroups)
+
+if (egroups is None):
+        print('')
+else:
+        for member in sorted(egroups):
+                print(member)
+#print(egroups)
 
 if (admins_only_flag == 'false'):
         ldapsearch_groups_cmd = 'ldapsearch -z 0 -E pr=1000/noprompt -LLL -x -h "xldap.cern.ch" -b "DC=cern,DC=ch" "(&(objectClass=group)(cn={0}))" member'.format(e_group_non_primary)
