@@ -176,8 +176,8 @@ namespace Backend.Controllers
         [SwaggerOperation("Add a new user to the device.")]
         public async Task<ActionResult<string>> CreateUser([FromBody] User user)
         {
-            user.UserName = user.UserName.Trim();
-            user.DeviceName = user.DeviceName.Trim();
+            user.UserName = user.UserName.Trim().ToLower();
+            user.DeviceName = user.DeviceName.Trim().ToLower();
 
             try
             {
@@ -247,6 +247,8 @@ namespace Backend.Controllers
                 {
                     return deviceInfo["Error"] as string;
                 }
+
+
                 string responsiblePersonUsername;
                 if ((deviceInfo["UserPersonFirstName"] as string).Contains("E-GROUP"))
                 {
@@ -264,7 +266,7 @@ namespace Backend.Controllers
                 }
 
                 List<string> userEGroups = deviceInfo["EGroupNames"] as List<string>;
-                if (userEGroups?.Contains(user.UserName) != true)
+                if (userEGroups?.Contains(user.UserName) != true )
                 {
                     if (user.UserName != responsiblePersonUsername && user.UserName != userPersonUsername && user.AddDeviceOrUser == "device")
                     {
@@ -273,7 +275,7 @@ namespace Backend.Controllers
 
                     if (user.SignedInUser != responsiblePersonUsername && user.SignedInUser != userPersonUsername && user.AddDeviceOrUser == "user")
                     {
-                        return $"User: {user.SignedInUser} is not an owner or a main user of the device: {user.DeviceName}!";
+                        return $"User: {user.UserName} is not an owner or a main user of the device: {user.DeviceName}!";
                     }
                 }
 
