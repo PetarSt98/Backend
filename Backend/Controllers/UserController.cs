@@ -242,16 +242,16 @@ namespace Backend.Controllers
                         throw new InvalidFetchingException($"Error: Could not retrieve ownership data for the device: {resourceName}");
                     }
 
-                    List<string> userEGroups_search = deviceInfo["EGroupNames"] as List<string>;
+                    List<string> admins = deviceInfo["EGroupNames"] as List<string>;
+                    List<string> egroupUsers = deviceInfo["EGroupUsers"] as List<string>;
 
-                    if (userEGroups_search?.Contains(userName) != true)
+                    if (admins?.Contains(userName) != true && egroupUsers?.Contains(userName) != true)
                     {
                         if (userName != responsiblePersonUsername && userName != userPersonUsername)
                         {
                             throw new InvalidFetchingException($"User: {userName} is not an owner or a user of the device: {resourceName}!");
                         }
                     }
-
 
                     //throw new InvalidFetchingException($"User: {userName} is not an owner or a user of the Device: {resourceName}!");
                 }
@@ -1034,17 +1034,21 @@ namespace Backend.Controllers
                     return $"Error: Could not retrieve ownership data for the device: {deviceName}";
                 }
 
-                List<string> userEGroups = deviceInfo["EGroupNames"] as List<string>;
-                if (userEGroups?.Contains(userName) != true)
+                List<string> admins = deviceInfo["EGroupNames"] as List<string>;
+                List<string> egroupUsers = deviceInfo["EGroupUsers"] as List<string>;
+
+                if (admins?.Contains(userName) != true && admins?.Contains(signedInUser) != true)
                 {
                     if (userName != responsiblePersonUsername && userName != userPersonUsername && addDeviceOrUser == "device")
                     {
-                        return $"User: {userName} is not an owner or a user of the device: {deviceName}!";
+                        if (egroupUsers?.Contains(userName) != true)
+                            return $"User: {userName} is not an owner or a user of the device: {deviceName}!";
                     }
 
                     if (signedInUser != responsiblePersonUsername && signedInUser != userPersonUsername && addDeviceOrUser == "user")
                     {
-                        return $"User: {signedInUser} is not an owner or a main user of the device: {deviceName}!";
+                        if (egroupUsers?.Contains(signedInUser) != true)
+                            return $"You are not an owner or a main user of the device: {deviceName}, you cannot edit users!";
                     }
                 }
             }
