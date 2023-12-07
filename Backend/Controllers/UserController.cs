@@ -6,7 +6,7 @@ using Swashbuckle.AspNetCore.Annotations;
 using NetCoreOidcExample.Helpers;
 using System.Text.RegularExpressions;
 using System.Text.Json;
-
+using System.Data.Entity;
 
 namespace Backend.Controllers
 {
@@ -55,9 +55,93 @@ namespace Backend.Controllers
 
             return Ok(new HashSet<string>(users));
         }
-
-        private async Task<IEnumerable<rap_resource>> GetRapByResourceName(RapContext db, string userName, string resourceName, bool fetchToDeleteResource)
+        public class AccessInitRequest
         {
+            public string device { get; set; }
+            public List<string> Users { get; set; }
+        }
+
+        [Authorize]
+        [HttpPost]
+        [Route("acces_init")]
+        [SwaggerOperation("Get access status for a list of users for a specific device")]
+        public async Task<ActionResult<Dictionary<string, bool>>> AccessInit([FromBody] AccessInitRequest request)
+        {
+            var accessStatuses = new Dictionary<string, bool>();
+            try
+            {
+                
+                using (var db = new RapContext())
+                {
+                    foreach (var user in request.Users)
+                    {
+                        var hasAccessList = await db.rap_resource
+                            .Where(r => (r.resourceName == request.device && !r.toDelete && r.RAPName == ("RAP_" + user)))
+                            .Select(r => r.access)
+                            .ToListAsync();
+
+                        var hasAccess = hasAccessList[0];
+                        accessStatuses[user] = hasAccess;
+                    }
+                }
+            } catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+            }
+            return Ok(accessStatuses);
+        }
+
+        public class AccessRequest
+        {
+            public string signedInUser { get; set; }
+            public string searchedDeviceName { get; set; }
+            public string user { get; set; }
+            public bool lockStatus { get; set; }
+        }
+    
+
+        [Authorize]
+        [HttpPost]
+        [Route("access")]
+        [SwaggerOperation("Toggle access status for a user for a specific device")]
+        public async Task<ActionResult<bool>> Access([FromBody] AccessRequest request)
+        {
+            try
+            {
+                using (var db = new RapContext())
+                {
+                    var resourcesToUpdate = await db.rap_resource
+                        .Where(r => (r.resourceName == request.searchedDeviceName && !r.toDelete && r.RAPName == ("RAP_" + request.user)))
+                        .ToListAsync();
+
+                    if (resourcesToUpdate.Any())
+                    {
+                        // Assuming there is only one resource per user-device pair, but it's a list to handle potential multiple records
+                        foreach (var resource in resourcesToUpdate)
+                        {
+                            resource.access = !resource.access; // Toggle the access
+                        }
+
+                        await db.SaveChangesAsync(); // Save the changes
+                        return Ok(resourcesToUpdate.First().access); // Return the new access status
+                    }
+                    else
+                    {
+                        // No resource found for the given conditions
+                        return NotFound("Resource not found");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                return StatusCode(500, "Internal Server Error");
+            }
+        }
+
+
+            private async Task<IEnumerable<rap_resource>> GetRapByResourceName(RapContext db, string userName, string resourceName, bool fetchToDeleteResource)
+                {
             try
             {
                 List<string> userEGroups = null;
@@ -65,11 +149,11 @@ namespace Backend.Controllers
                 string rapOwner = UserDevicesController.AddDomainToRapOwner(userName);
                 var fetched_resources = db.rap_resource
                     .Where(r =>
-                        ((r.resourceName == resourceName) && r.access && (!r.toDelete || fetchToDeleteResource)))
+                        ((r.resourceName == resourceName) && (!r.toDelete || fetchToDeleteResource)))
                         .ToList();
                 var fetched_resources_all_users = db.rap_resource
                     .Where(r =>
-                        ((r.resourceName == resourceName) && r.access && (!r.toDelete || fetchToDeleteResource)))
+                        ((r.resourceName == resourceName) && (!r.toDelete || fetchToDeleteResource)))
                         .ToList();
 
 
@@ -259,6 +343,17 @@ namespace Backend.Controllers
                     {
                         if (user.AddDeviceOrUser == "device")
                         {
+                            using (var db = new RapContext())
+                            {
+                                var hasAccessList = await db.rap_resource
+                                .Where(r => (r.resourceName == user.DeviceName && !r.toDelete && r.RAPName == ("RAP_" + user.UserName)))
+                                .Select(r => r.access)
+                                .ToListAsync();
+                                if (!hasAccessList[0])
+                                {
+                                    return "Access to this device is currently disabled for your account. Please contact the Main or Responsible user to enable your access. They can do so by using the 'Edit - Manage users for this decive' feature and toggling the lock button.";
+                                }
+                            }
                             return "Device already exists in the list below!";
                         }
                         else if (user.AddDeviceOrUser == "user")
@@ -315,17 +410,21 @@ namespace Backend.Controllers
                     return $"Error: Could not retrieve ownership data for the device: {user.DeviceName}";
                 }
 
-                List<string> userEGroups = deviceInfo["EGroupNames"] as List<string>;
-                if (userEGroups?.Contains(user.UserName) != true )
+                List<string> admins = deviceInfo["EGroupNames"] as List<string>;
+                List<string> egroupUsers = deviceInfo["EGroupUsers"] as List<string>;
+
+                if (admins?.Contains(user.UserName) != true && admins?.Contains(user.SignedInUser) != true)
                 {
                     if (user.UserName != responsiblePersonUsername && user.UserName != userPersonUsername && user.AddDeviceOrUser == "device")
                     {
-                        return $"User: {user.UserName} is not an owner or a user of the device: {user.DeviceName}!";
+                        if (egroupUsers?.Contains(user.UserName) != true)
+                            return $"User: {user.UserName} is not an owner or a user of the device: {user.DeviceName}!";
                     }
 
                     if (user.SignedInUser != responsiblePersonUsername && user.SignedInUser != userPersonUsername && user.AddDeviceOrUser == "user")
                     {
-                        return $"User: {user.UserName} is not an owner or a main user of the device: {user.DeviceName}!";
+                        if (egroupUsers?.Contains(user.SignedInUser) != true)
+                            return $"You are not an owner or a main user of the device: {user.DeviceName}, you cannot edit users!";
                     }
                 }
 
