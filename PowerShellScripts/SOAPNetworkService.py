@@ -71,7 +71,7 @@ token = client.service.getAuthToken(username, password, 'CERN')
 authenticationHeader = Element('Auth').insert(Element('token').setText(token))
 client.set_options(soapheaders=authenticationHeader)
 
-egroups = None
+egroups = []
 
 if (admins_only_flag == 'false'):
         # Calling getDeviceInfo
@@ -93,6 +93,7 @@ if (admins_only_flag == 'false'):
                         initial_group_members = ldapsearch_group_members(result.ResponsiblePerson.Name)
                         members = get_group_members(initial_group_members)
                         group_members = expand_groups(members)
+			egroups.append(group_members)
                         for group_member in group_members:
                                 if (userName in group_member):
                                         owner_info = userName
@@ -116,7 +117,7 @@ if (admins_only_flag == 'false'):
                         members = get_group_members(initial_group_members)
                         group_members = expand_groups(members)
                         #print(group_members)
-                        egroups = group_members
+                        egroups.append(group_members)
                         for group_member in group_members:
                                 if (userName in group_member):
                                         user_info = userName
@@ -162,7 +163,7 @@ for member in sorted(all_members):
     print(member)
 print("-------------------------")
 
-if (egroups is None):
+if (egroups is None or len(egroups) == 0):
         print('')
 else:
         for member in sorted(egroups):
