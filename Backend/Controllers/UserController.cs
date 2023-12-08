@@ -380,14 +380,6 @@ namespace Backend.Controllers
                     return $"The Network Domain(s) of the device {user.DeviceName} are not allowed!";
                 }
 
-                if (user.PrimaryUser != "Primary")
-                {
-                    List<string> primaryAccounts = deviceInfo["PrimaryAccounts"] as List<string>;
-                    if (!primaryAccounts.Contains(user.PrimaryUser) && user.AddDeviceOrUser == "user")
-                    {
-                        return $"Signed in user: {user.PrimaryUser} is not a primary account!\nOnly primary accounts can manage users!";
-                    }
-                }
                 if (deviceInfo["Error"] != null)
                 {
                     return deviceInfo["Error"] as string;
@@ -412,6 +404,15 @@ namespace Backend.Controllers
 
                 List<string> admins = deviceInfo["EGroupNames"] as List<string>;
                 List<string> egroupUsers = deviceInfo["EGroupUsers"] as List<string>;
+
+                if (user.PrimaryUser != "Primary" && admins?.Contains(user.SignedInUser) != true)
+                {
+                    List<string> primaryAccounts = deviceInfo["PrimaryAccounts"] as List<string>;
+                    if (!primaryAccounts.Contains(user.PrimaryUser) && user.AddDeviceOrUser == "user")
+                    {
+                        return $"Signed in user: {user.PrimaryUser} is not a primary account!\nOnly primary accounts can manage users!";
+                    }
+                }
 
                 if (admins?.Contains(user.UserName) != true && admins?.Contains(user.SignedInUser) != true)
                 {
