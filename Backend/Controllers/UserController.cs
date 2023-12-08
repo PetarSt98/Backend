@@ -1006,15 +1006,6 @@ namespace Backend.Controllers
                     return $"User: {userName} does not exist!";
                 }
 
-                if (primaryUser != "Primary")
-                {
-                    List<string> primaryAccounts = deviceInfo["PrimaryAccounts"] as List<string>;
-                    if (!primaryAccounts.Contains(primaryUser) && addDeviceOrUser == "user")
-                    {
-                        return $"Signed in user: {primaryUser} is not a primary account!\nOnly primary accounts can manage users!";
-                    }
-                }
-
                 if (deviceInfo["Error"] != null)
                 {
                     return deviceInfo["Error"] as string;
@@ -1037,6 +1028,15 @@ namespace Backend.Controllers
 
                 List<string> admins = deviceInfo["EGroupNames"] as List<string>;
                 List<string> egroupUsers = deviceInfo["EGroupUsers"] as List<string>;
+
+                if (primaryUser != "Primary" && admins?.Contains(signedInUser) != true)
+                {
+                    List<string> primaryAccounts = deviceInfo["PrimaryAccounts"] as List<string>;
+                    if (!primaryAccounts.Contains(primaryUser) && addDeviceOrUser == "user")
+                    {
+                        return $"Signed in user: {primaryUser} is not a primary account!\nOnly primary accounts can manage users!";
+                    }
+                }
 
                 if (admins?.Contains(userName) != true && admins?.Contains(signedInUser) != true)
                 {
