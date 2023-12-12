@@ -259,6 +259,10 @@ namespace Backend.Controllers
                 return fetched_resources_all_users;
 
             }
+            catch (InvalidFetchingException ex)
+            {
+                throw;
+            }
             catch (Exception ex)
             {
                 //LoggerSingleton.General.Fatal($"Failed query: {ex}");
