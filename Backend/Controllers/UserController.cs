@@ -157,10 +157,10 @@ namespace Backend.Controllers
                         .ToList();
 
 
-                if (fetched_resources.Count() == 0)
-                {
-                    throw new InvalidFetchingException($"Device: {resourceName} does not exist!");
-                }
+                //if (fetched_resources.Count() == 0)
+                //{
+                //    throw new InvalidFetchingException($"Device: {resourceName} does not exist!");
+                //}
 
                 if (System.IO.File.Exists("/app/cacheData/admins_cache.json"))
                 {
@@ -262,7 +262,7 @@ namespace Backend.Controllers
             catch (Exception ex)
             {
                 //LoggerSingleton.General.Fatal($"Failed query: {ex}");
-                throw;
+                throw new InvalidFetchingException($"Device: {resourceName} does not exist!");
             }
         }
 
@@ -648,7 +648,7 @@ namespace Backend.Controllers
 
                     if (eGroupNames.Count == 0 || !string.IsNullOrEmpty(errors))
                     {
-                        throw new Exception(errors);
+                        throw new InvalidFetchingException(errors);
                     }
 
                     if (errors.Contains("Device not found"))
