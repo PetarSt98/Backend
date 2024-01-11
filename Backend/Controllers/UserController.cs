@@ -387,7 +387,7 @@ namespace Backend.Controllers
                                 .ToListAsync();
                                 if (!hasAccessList[0])
                                 {
-                                    return "Access to this device is currently disabled for your account. To enable access, press the Edit button next to the +Add button (Manage users for this device) and toggle the lock icon next to your account.\nNote: Only the responsible/main user can perform this action.";
+                                    return "Access to this device is currently disabled for your account. To enable access, press the Edit button next to the +Add button (Manage users for this device), then toggle (click) the lock icon next to your account and refresh the page.\nNote: Only the responsible/main user can perform this action.";
                                 }
                             }
                             return "Device already exists in the list below!";
