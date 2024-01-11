@@ -108,6 +108,38 @@ namespace Backend.Controllers
         {
             try
             {
+                Dictionary<string, object> deviceInfo = await UserController.ExecuteSOAPServiceApi(request.signedInUser, request.searchedDeviceName, "false");
+
+                string responsiblePersonUsername;
+                if ((deviceInfo["UserPersonFirstName"] as string).Contains("E-GROUP"))
+                {
+                    responsiblePersonUsername = deviceInfo["ResponsiblePersonName"] as string;
+                }
+                else
+                {
+                    responsiblePersonUsername = deviceInfo["ResponsiblePersonUsername"] as string;
+                }
+                string userPersonUsername = deviceInfo["UserPersonUsername"] as string;
+
+                if (responsiblePersonUsername == null || userPersonUsername == null)
+                {
+                    return NotFound("Resource not found");
+                    //return $"Error: Could not retrieve ownership data for the device: {request.searchedDeviceName}";
+                }
+
+                List<string> admins = deviceInfo["EGroupNames"] as List<string>;
+                List<string> egroupUsers = deviceInfo["EGroupUsers"] as List<string>;
+
+                if (admins?.Contains(request.signedInUser) != true)
+                {
+
+                    if (request.signedInUser != responsiblePersonUsername && request.signedInUser != userPersonUsername)
+                    {
+                        if (egroupUsers?.Contains(request.signedInUser) != true)
+                            return Unauthorized($"You are not an owner or a main user of the device: {request.searchedDeviceName}, you cannot edit users!");
+                    }
+                }
+
                 using (var db = new RapContext())
                 {
                     var resourcesToUpdate = await db.rap_resource
@@ -355,7 +387,7 @@ namespace Backend.Controllers
                                 .ToListAsync();
                                 if (!hasAccessList[0])
                                 {
-                                    return "Access to this device is currently disabled for your account. Please contact the Main or Responsible user to enable your access. They can do so by using the 'Edit - Manage users for this decive' feature and toggling the lock button.";
+                                    return "Access to this device is currently disabled for your account. To enable access, press the Edit button next to the +Add button (Manage users for this device) and toggle the lock icon next to your account.\nNote: Only the responsible/main user can perform this action.";
                                 }
                             }
                             return "Device already exists in the list below!";
