@@ -470,11 +470,11 @@ namespace Backend.Controllers
                     return $"The device: {user.DeviceName} does not have the responsible person (owner)!";
                 }
 
+                string rapName = "RAP_" + user.UserName;
+                string resourceGroupName = "LG-" + user.UserName;
+
                 using (var db = new RapContext())
                 {
-                    string rapName = "RAP_" + user.UserName;
-                    string resourceGroupName = "LG-" + user.UserName;
-
                     var existingRap = db.raps.FirstOrDefault(rap =>
                         rap.name.ToLower() == rapName.ToLower() &&
                         rap.login.ToLower() == user.UserName.ToLower() &&
@@ -554,8 +554,12 @@ namespace Backend.Controllers
                         newResources.ForEach(nr => db.rap_resource.Add(nr));
                         db.raps.Add(newRap);
                         db.raps.Remove(existingRap);
+                        db.SaveChanges();
                     }
+                }
 
+                using (var db = new RapContext())
+                {
                     if (deviceInfo == null)
                     {
                         return BadRequest("Unable to contact SOAP or device name not found!");
