@@ -476,9 +476,9 @@ namespace Backend.Controllers
                     string resourceGroupName = "LG-" + user.UserName;
 
                     var existingRap = db.raps.FirstOrDefault(rap =>
-                        rap.name == rapName &&
-                        rap.login == user.UserName &&
-                        rap.resourceGroupName == resourceGroupName &&
+                        rap.name.ToLower() == rapName.ToLower() &&
+                        rap.login.ToLower() == user.UserName.ToLower() &&
+                        rap.resourceGroupName.ToLower() == resourceGroupName.ToLower() &&
                         rap.toDelete == false);
 
                     // If the rap does not exist in the database, then create a new one
@@ -497,6 +497,63 @@ namespace Backend.Controllers
                         };
 
                         db.raps.Add(newRap);
+                    }
+                    else
+                    {
+                        var newRap = new rap
+                        {
+                            name = "RAP_" + existingRap.name.Split('_').Last().ToLower(),
+                            login = existingRap.name.Split('_').Last().ToLower(),
+                            resourceGroupName = "LG-" + existingRap.name.Split('_').Last().ToLower(),
+                            description = existingRap.description,
+                            port = existingRap.port,
+                            enabled = existingRap.enabled,
+                            resourceGroupDescription = existingRap.resourceGroupDescription,
+                            synchronized = existingRap.synchronized,
+                            lastModified = existingRap.lastModified,
+                            toDelete = existingRap.toDelete,
+                            unsynchronizedGateways = existingRap.unsynchronizedGateways,
+                        };
+
+                        var newRapNameSuffix = newRap.name.Split('_').Last();
+
+
+                        var resources = db.rap_resource
+                            .Where(rr => rr.RAPName.StartsWith("RAP_"))
+                            .ToList();
+
+
+                        var resourcesToUpdate = resources
+                            .Where(rr => rr.RAPName.Split('_').Last().ToLower() == newRapNameSuffix)
+                            .ToList();
+
+                        var newResources = new List<rap_resource>();
+
+                        foreach (var oldResource in resourcesToUpdate)
+                        {
+                            var newResource = new rap_resource
+                            {
+                                RAPName = newRap.name,
+                                resourceName = oldResource.resourceName,
+                                resourceOwner = oldResource.resourceOwner,
+                                access = oldResource.access,
+                                synchronized = oldResource.synchronized,
+                                invalid = oldResource.invalid,
+                                exception = oldResource.exception,
+                                createDate = oldResource.createDate,
+                                updateDate = oldResource.updateDate,
+                                toDelete = oldResource.toDelete,
+                                unsynchronizedGateways = oldResource.unsynchronizedGateways
+                            };
+
+                            newResources.Add(newResource);
+
+                            db.rap_resource.Remove(oldResource);
+                        }
+                        newRap.rap_resource = newResources;
+                        newResources.ForEach(nr => db.rap_resource.Add(nr));
+                        db.raps.Add(newRap);
+                        db.raps.Remove(existingRap);
                     }
 
                     if (deviceInfo == null)
