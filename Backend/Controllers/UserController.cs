@@ -497,6 +497,7 @@ namespace Backend.Controllers
                         };
 
                         db.raps.Add(newRap);
+                        db.SaveChanges();
                     }
                     else
                     {
@@ -556,6 +557,7 @@ namespace Backend.Controllers
                         db.raps.Remove(existingRap);
                         db.SaveChanges();
                     }
+                    db.SaveChanges();
                 }
 
                 using (var db = new RapContext())
