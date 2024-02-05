@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using SynchronizerLibrary.Data;
 using System.Diagnostics;
 using Backend.Exceptions;
@@ -489,6 +489,7 @@ namespace Backend.Controllers
                             name = rapName,
                             login = user.UserName,
                             port = "3389",
+                            enabled = true,
                             resourceGroupName = resourceGroupName,
                             synchronized = false,
                             lastModified = DateTime.Now,
