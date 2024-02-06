@@ -8,6 +8,7 @@ using System.Text.RegularExpressions;
 using System.Text.Json;
 using System.Data.Entity;
 
+
 namespace Backend.Controllers
 {
     public interface IUserService
@@ -489,6 +490,7 @@ namespace Backend.Controllers
                             name = rapName,
                             login = user.UserName,
                             port = "3389",
+                            enabled = true,
                             resourceGroupName = resourceGroupName,
                             synchronized = false,
                             lastModified = DateTime.Now,
@@ -1245,4 +1247,47 @@ namespace Backend.Controllers
                 : "RAP_" + user;
         }
     }
+
+    [Route("api/log_session")]
+    [ApiController]
+    public class LogSession : ControllerBase
+    {
+        [Authorize]
+        [HttpGet]
+        [Route("fetch")]
+        [SwaggerOperation("Fetch all sessions of the user.")]
+        public async Task<ActionResult<IEnumerable<dynamic>>> FetchSessions(string username, string fetchOnlyPublicCluster)
+        {
+            var pythonExecutable = "python2.7"; 
+            var scriptFile = Path.Combine(Directory.GetCurrentDirectory(), "fetch_log_clusters.py");
+
+            var startInfo = new ProcessStartInfo(pythonExecutable)
+            {
+                Arguments = $"{scriptFile} --username \"{username}\" --fecthOnlyPublicCluster \"{fetchOnlyPublicCluster}\"",
+                RedirectStandardOutput = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+
+            using (var process = Process.Start(startInfo))
+            {
+                await process.WaitForExitAsync();
+
+                var jsonFilePath = "log_me_off_clusters.json";
+
+                if (System.IO.File.Exists(jsonFilePath))
+                {
+                    var jsonData = await System.IO.File.ReadAllTextAsync(jsonFilePath);
+                    var clusters = System.Text.Json.JsonSerializer.Deserialize<IEnumerable<dynamic>>(jsonData);
+
+                    return Ok(clusters);
+                }
+                else
+                {
+                    return BadRequest("Failed to generate session data.");
+                }
+            }
+        }
+    }
+
 }
