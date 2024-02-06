@@ -1273,7 +1273,7 @@ namespace Backend.Controllers
             {
                 await process.WaitForExitAsync();
 
-                var jsonFilePath = "log_me_off_clusters.json";
+                var jsonFilePath = @"cacheData\log_me_off_clusters.json";
 
                 if (System.IO.File.Exists(jsonFilePath))
                 {

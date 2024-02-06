@@ -13,7 +13,7 @@ args = parser.parse_args()
 username = os.environ.get('LOG_OFF_ADMIN_USERNAME')
 password = os.environ.get('LOG_OFF_ADMIN_PASSWORD')
 
-print(args.username, args.fecthOnlyPublicCluster, username, password)
+#print(args.username, args.fecthOnlyPublicCluster, username, password)
 
 # Set the URL and authentication credentials
 url = 'https://terminalservicesws.web.cern.ch/TerminalServicesWS/TerminalServicesAdminWS.asmx/getTSTableWithLoginInfoForUser'
@@ -49,11 +49,11 @@ if response.status_code == 200:
             "isConnected": isConnected
         })
 
-    with open('log_me_off_clusters.json', 'w') as f:
+    with open('cacheData/log_me_off_clusters.json', 'w') as f:
         json.dump(data, f, indent=4)
 
     print("Data written to output.json")
 
 else:
     print('Request failed with status code:', response.status_code)
-    print(response.text)
+    print(response.text.encode('utf-8'))
