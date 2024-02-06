@@ -55,5 +55,5 @@ if response.status_code == 200:
     print("Data written to output.json")
 
 else:
-    print(f"Request failed with status code: {response.status_code}")
+    print('Request failed with status code:', response.status_code)
     print(response.text)
