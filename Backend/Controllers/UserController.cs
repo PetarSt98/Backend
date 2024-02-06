@@ -1258,6 +1258,8 @@ namespace Backend.Controllers
         [SwaggerOperation("Fetch all sessions of the user.")]
         public async Task<ActionResult<IEnumerable<dynamic>>> FetchSessions(string username, string fetchOnlyPublicCluster)
         {
+            Console.WriteLine("Fetching data, successful endpoint reach");
+
             var pythonExecutable = "python2.7"; 
             var scriptFile = Path.Combine(Directory.GetCurrentDirectory(), "fetch_log_clusters.py");
 
