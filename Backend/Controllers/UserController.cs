@@ -1260,35 +1260,77 @@ namespace Backend.Controllers
         {
             Console.WriteLine("Fetching data, successful endpoint reach");
 
-            var pythonExecutable = "python2.7"; 
-            var scriptFile = Path.Combine(Directory.GetCurrentDirectory(), "fetch_log_clusters.py");
 
-            var startInfo = new ProcessStartInfo(pythonExecutable)
+            string pathToScript = Path.Combine(Directory.GetCurrentDirectory(), "fetch_log_clusters.py");
+   
+            using (var process = new Process())
             {
-                Arguments = $"{scriptFile} --username \"{username}\" --fecthOnlyPublicCluster \"{fetchOnlyPublicCluster}\"",
-                RedirectStandardOutput = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            };
+                process.StartInfo.FileName = "python2.7";
+                process.StartInfo.Arguments = $"{pathToScript} --username {username} --fecthOnlyPublicCluster {fetchOnlyPublicCluster}";
+                process.StartInfo.UseShellExecute = false;
+                process.StartInfo.RedirectStandardOutput = true;
+                process.StartInfo.RedirectStandardError = true;
+                process.Start();
+                bool SOAPFlag = true;
+                bool primaryGroupFlag = false;
 
-            using (var process = Process.Start(startInfo))
-            {
-                await process.WaitForExitAsync();
-
-                var jsonFilePath = @"cacheData\log_me_off_clusters.json";
-
-                if (System.IO.File.Exists(jsonFilePath))
+                string output = process.StandardOutput.ReadToEnd();
+                string errors = process.StandardError.ReadToEnd();
+                
+                process.WaitForExit();
+                Console.WriteLine("Finished running python script.");
+                Console.WriteLine(output);
+                Console.WriteLine(errors);
+                if (errors != null)
                 {
-                    var jsonData = await System.IO.File.ReadAllTextAsync(jsonFilePath);
-                    var clusters = System.Text.Json.JsonSerializer.Deserialize<IEnumerable<dynamic>>(jsonData);
 
-                    return Ok(clusters);
+                    var jsonFilePath = "/app/cacheData/log_me_off_clusters.json";
+
+                    if (System.IO.File.Exists(jsonFilePath))
+                    {
+                        var jsonData = await System.IO.File.ReadAllTextAsync(jsonFilePath);
+                        var clusters = System.Text.Json.JsonSerializer.Deserialize<IEnumerable<dynamic>>(jsonData);
+
+                        return Ok(clusters);
+                    }
+                    else
+                    {
+                        return BadRequest("Failed to generate session data.");
+                    }
                 }
-                else
-                {
-                    return BadRequest("Failed to generate session data.");
-                }
+                
             }
+
+            return BadRequest("Failed to generate session data.");
+            //var pythonExecutable = "python2.7"; 
+            //var scriptFile = Path.Combine(Directory.GetCurrentDirectory(), "fetch_log_clusters.py");
+
+            //var startInfo = new ProcessStartInfo(pythonExecutable)
+            //{
+            //    Arguments = $"{scriptFile} --username \"{username}\" --fecthOnlyPublicCluster \"{fetchOnlyPublicCluster}\"",
+            //    RedirectStandardOutput = true,
+            //    UseShellExecute = false,
+            //    CreateNoWindow = true
+            //};
+
+            //using (var process = Process.Start(startInfo))
+            //{
+            //    await process.WaitForExitAsync();
+
+            //    var jsonFilePath = @"cacheData\log_me_off_clusters.json";
+
+            //    if (System.IO.File.Exists(jsonFilePath))
+            //    {
+            //        var jsonData = await System.IO.File.ReadAllTextAsync(jsonFilePath);
+            //        var clusters = System.Text.Json.JsonSerializer.Deserialize<IEnumerable<dynamic>>(jsonData);
+
+            //        return Ok(clusters);
+            //    }
+            //    else
+            //    {
+            //        return BadRequest("Failed to generate session data.");
+            //    }
+            //}
         }
     }
 
