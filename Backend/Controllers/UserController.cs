@@ -1252,56 +1252,120 @@ namespace Backend.Controllers
     [ApiController]
     public class LogSession : ControllerBase
     {
+        //[Authorize]
+        //[HttpGet]
+        //[Route("fetch")]
+        //[SwaggerOperation("Fetch all sessions of the user.")]
+        //public async Task<ActionResult<IEnumerable<dynamic>>> FetchSessions(string username, string fetchOnlyPublicCluster)
+        //{
+        //    Console.WriteLine("Fetching data, successful endpoint reach");
+
+
+        //    string pathToScript = Path.Combine(Directory.GetCurrentDirectory(), "fetch_log_clusters.py");
+
+        //    using (var process = new Process())
+        //    {
+        //        process.StartInfo.FileName = "python2.7";
+        //        process.StartInfo.Arguments = $"{pathToScript} --username {username} --fecthOnlyPublicCluster {fetchOnlyPublicCluster}";
+        //        process.StartInfo.UseShellExecute = false;
+        //        process.StartInfo.RedirectStandardOutput = true;
+        //        process.StartInfo.RedirectStandardError = true;
+        //        process.Start();
+        //        bool SOAPFlag = true;
+        //        bool primaryGroupFlag = false;
+
+        //        string output = process.StandardOutput.ReadToEnd();
+        //        string errors = process.StandardError.ReadToEnd();
+
+        //        process.WaitForExit();
+        //        Console.WriteLine("Finished running python script.");
+        //        Console.WriteLine(output);
+        //        Console.WriteLine(errors);
+        //        if (errors != null)
+        //        {
+
+        //            var jsonFilePath = "/app/cacheData/log_me_off_clusters.json";
+
+        //            if (System.IO.File.Exists(jsonFilePath))
+        //            {
+        //                var jsonData = await System.IO.File.ReadAllTextAsync(jsonFilePath);
+        //                var clusters = System.Text.Json.JsonSerializer.Deserialize<IEnumerable<dynamic>>(jsonData);
+
+        //                return Ok(clusters);
+        //            }
+        //            else
+        //            {
+        //                return BadRequest("Failed to generate session data.");
+        //            }
+        //        }
+
+        //    }
+
+        //    return BadRequest("Failed to generate session data.");
+        //}
+
+
         [Authorize]
         [HttpGet]
-        [Route("fetch")]
-        [SwaggerOperation("Fetch all sessions of the user.")]
-        public async Task<ActionResult<IEnumerable<dynamic>>> FetchSessions(string username, string fetchOnlyPublicCluster)
+        [Route("trigger")]
+        [SwaggerOperation("Trigger the session data generation process.")]
+        public async Task<ActionResult> TriggerSessionGeneration(string username, string fetchOnlyPublicCluster)
+        {
+            Task.Run(() => GenerateSessionData(username, fetchOnlyPublicCluster));
+
+            return Ok("Session data generation process started.");
+        }
+
+        [Authorize]
+        [HttpGet]
+        [Route("result")]
+        [SwaggerOperation("Fetch result from the session data generation process.")]
+        public async Task<ActionResult<IEnumerable<dynamic>>> FetchSessionResult()
+        {
+            await Task.Delay(TimeSpan.FromMinutes(2)); // Wait for 2 minutes
+
+            var jsonFilePath = "/app/cacheData/log_me_off_clusters.json";
+
+            if (System.IO.File.Exists(jsonFilePath))
+            {
+                var jsonData = await System.IO.File.ReadAllTextAsync(jsonFilePath);
+                var clusters = System.Text.Json.JsonSerializer.Deserialize<IEnumerable<dynamic>>(jsonData);
+
+                return Ok(clusters);
+            }
+            else
+            {
+                return BadRequest("Failed to generate session data or data not available yet.");
+            }
+        }
+
+        private async Task GenerateSessionData(string username, string fetchOnlyPublicCluster)
         {
             Console.WriteLine("Fetching data, successful endpoint reach");
 
-
             string pathToScript = Path.Combine(Directory.GetCurrentDirectory(), "fetch_log_clusters.py");
-   
+
             using (var process = new Process())
             {
                 process.StartInfo.FileName = "python2.7";
-                process.StartInfo.Arguments = $"{pathToScript} --username {username} --fecthOnlyPublicCluster {fetchOnlyPublicCluster}";
+                process.StartInfo.Arguments = $"{pathToScript} --username {username} --fetchOnlyPublicCluster {fetchOnlyPublicCluster}";
                 process.StartInfo.UseShellExecute = false;
                 process.StartInfo.RedirectStandardOutput = true;
                 process.StartInfo.RedirectStandardError = true;
                 process.Start();
-                bool SOAPFlag = true;
-                bool primaryGroupFlag = false;
 
                 string output = process.StandardOutput.ReadToEnd();
                 string errors = process.StandardError.ReadToEnd();
-                
+
+                await Task.Delay(TimeSpan.FromSeconds(10)); // Just to ensure the script has enough time to execute
+
                 process.WaitForExit();
                 Console.WriteLine("Finished running python script.");
                 Console.WriteLine(output);
                 Console.WriteLine(errors);
-                if (errors != null)
-                {
 
-                    var jsonFilePath = "/app/cacheData/log_me_off_clusters.json";
-
-                    if (System.IO.File.Exists(jsonFilePath))
-                    {
-                        var jsonData = await System.IO.File.ReadAllTextAsync(jsonFilePath);
-                        var clusters = System.Text.Json.JsonSerializer.Deserialize<IEnumerable<dynamic>>(jsonData);
-
-                        return Ok(clusters);
-                    }
-                    else
-                    {
-                        return BadRequest("Failed to generate session data.");
-                    }
-                }
-                
+                // Handle errors or logging if needed
             }
-
-            return BadRequest("Failed to generate session data.");
         }
     }
 
