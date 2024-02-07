@@ -25,7 +25,7 @@ namespace Backend
                     webBuilder.UseStartup<Startup>();
                     webBuilder.ConfigureKestrel((context, options) =>
                     {
-                        options.Limits.KeepAliveTimeout = TimeSpan.FromMinutes(5);
+                        options.Limits.KeepAliveTimeout = TimeSpan.FromMinutes(2);
                     });
                 });
     }
