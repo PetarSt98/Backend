@@ -57,7 +57,7 @@ namespace Backend
 
             services.AddCors(options =>
             {
-                options.AddPolicy("AllowSpecificOrigin", builder =>
+                options.AddPolicy("CorsPolicy", builder =>
                     builder.WithOrigins(
                         "http://localhost:3000",
                         "https://remote-desktop-gateway-test.web.cern.ch"
@@ -80,7 +80,7 @@ namespace Backend
             app.UseRouting();
 
             // Apply the CORS policy
-            app.UseCors("AllowSpecificOrigin");
+            app.UseCors("CorsPolicy");
 
             app.UseSwagger();
             app.UseSwaggerUI(c => {
