@@ -1302,35 +1302,6 @@ namespace Backend.Controllers
             }
 
             return BadRequest("Failed to generate session data.");
-            //var pythonExecutable = "python2.7"; 
-            //var scriptFile = Path.Combine(Directory.GetCurrentDirectory(), "fetch_log_clusters.py");
-
-            //var startInfo = new ProcessStartInfo(pythonExecutable)
-            //{
-            //    Arguments = $"{scriptFile} --username \"{username}\" --fecthOnlyPublicCluster \"{fetchOnlyPublicCluster}\"",
-            //    RedirectStandardOutput = true,
-            //    UseShellExecute = false,
-            //    CreateNoWindow = true
-            //};
-
-            //using (var process = Process.Start(startInfo))
-            //{
-            //    await process.WaitForExitAsync();
-
-            //    var jsonFilePath = @"cacheData\log_me_off_clusters.json";
-
-            //    if (System.IO.File.Exists(jsonFilePath))
-            //    {
-            //        var jsonData = await System.IO.File.ReadAllTextAsync(jsonFilePath);
-            //        var clusters = System.Text.Json.JsonSerializer.Deserialize<IEnumerable<dynamic>>(jsonData);
-
-            //        return Ok(clusters);
-            //    }
-            //    else
-            //    {
-            //        return BadRequest("Failed to generate session data.");
-            //    }
-            //}
         }
     }
 
