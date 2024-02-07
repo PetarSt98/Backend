@@ -7,7 +7,7 @@ import json
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--username', type=str, required=True)
-parser.add_argument('--fetchOnlyPublicClustertype', type=str, required=True)
+parser.add_argument('--fetchOnlyPublicCluster', type=str, required=True)
 args = parser.parse_args()
 
 username = os.environ.get('LOG_OFF_ADMIN_USERNAME')
