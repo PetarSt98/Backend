@@ -7,13 +7,13 @@ import json
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--username', type=str, required=True)
-parser.add_argument('--fecthOnlyPublicCluster', type=str, required=True)
+parser.add_argument('--fetchOnlyPublicClustertype=str, required=True)
 args = parser.parse_args()
 
 username = os.environ.get('LOG_OFF_ADMIN_USERNAME')
 password = os.environ.get('LOG_OFF_ADMIN_PASSWORD')
 
-#print(args.username, args.fecthOnlyPublicCluster, username, password)
+#print(args.username, args.fetchOnlyPublicCluster, username, password)
 
 # Set the URL and authentication credentials
 url = 'https://terminalservicesws.web.cern.ch/TerminalServicesWS/TerminalServicesAdminWS.asmx/getTSTableWithLoginInfoForUser'
@@ -21,7 +21,7 @@ url = 'https://terminalservicesws.web.cern.ch/TerminalServicesWS/TerminalService
 # Parameters for the GET request
 params = {
     'username': args.username,
-    'fecthOnlyPublicCluster': args.fecthOnlyPublicCluster
+    'fecthOnlyPublicCluster': args.fetchOnlyPublicCluster
 }
 
 # Make the GET request with Basic Authentication

@@ -1322,8 +1322,6 @@ namespace Backend.Controllers
         [SwaggerOperation("Fetch result from the session data generation process.")]
         public async Task<ActionResult<IEnumerable<dynamic>>> FetchSessionResult()
         {
-            await Task.Delay(TimeSpan.FromMinutes(2)); // Wait for 2 minutes
-
             var jsonFilePath = "/app/cacheData/log_me_off_clusters.json";
 
             if (System.IO.File.Exists(jsonFilePath))
