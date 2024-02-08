@@ -49,7 +49,7 @@ if response.status_code == 200:
             "isConnected": isConnected
         })
 
-    with open('cacheData/log_me_off_clusters.json', 'w') as f:
+    with open('cacheData/log_me_off_clusters_{}_{}.json'.format(args.username, args.fetchOnlyPublicCluster), 'w') as f:
         json.dump(data, f, indent=4)
 
     print("Data written to output.json")

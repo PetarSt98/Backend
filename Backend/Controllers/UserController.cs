@@ -1252,58 +1252,6 @@ namespace Backend.Controllers
     [ApiController]
     public class LogSession : ControllerBase
     {
-        //[Authorize]
-        //[HttpGet]
-        //[Route("fetch")]
-        //[SwaggerOperation("Fetch all sessions of the user.")]
-        //public async Task<ActionResult<IEnumerable<dynamic>>> FetchSessions(string username, string fetchOnlyPublicCluster)
-        //{
-        //    Console.WriteLine("Fetching data, successful endpoint reach");
-
-
-        //    string pathToScript = Path.Combine(Directory.GetCurrentDirectory(), "fetch_log_clusters.py");
-
-        //    using (var process = new Process())
-        //    {
-        //        process.StartInfo.FileName = "python2.7";
-        //        process.StartInfo.Arguments = $"{pathToScript} --username {username} --fecthOnlyPublicCluster {fetchOnlyPublicCluster}";
-        //        process.StartInfo.UseShellExecute = false;
-        //        process.StartInfo.RedirectStandardOutput = true;
-        //        process.StartInfo.RedirectStandardError = true;
-        //        process.Start();
-        //        bool SOAPFlag = true;
-        //        bool primaryGroupFlag = false;
-
-        //        string output = process.StandardOutput.ReadToEnd();
-        //        string errors = process.StandardError.ReadToEnd();
-
-        //        process.WaitForExit();
-        //        Console.WriteLine("Finished running python script.");
-        //        Console.WriteLine(output);
-        //        Console.WriteLine(errors);
-        //        if (errors != null)
-        //        {
-
-        //            var jsonFilePath = "/app/cacheData/log_me_off_clusters.json";
-
-        //            if (System.IO.File.Exists(jsonFilePath))
-        //            {
-        //                var jsonData = await System.IO.File.ReadAllTextAsync(jsonFilePath);
-        //                var clusters = System.Text.Json.JsonSerializer.Deserialize<IEnumerable<dynamic>>(jsonData);
-
-        //                return Ok(clusters);
-        //            }
-        //            else
-        //            {
-        //                return BadRequest("Failed to generate session data.");
-        //            }
-        //        }
-
-        //    }
-
-        //    return BadRequest("Failed to generate session data.");
-        //}
-
 
         [Authorize]
         [HttpGet]
@@ -1320,9 +1268,9 @@ namespace Backend.Controllers
         [HttpGet]
         [Route("result")]
         [SwaggerOperation("Fetch result from the session data generation process.")]
-        public async Task<ActionResult<IEnumerable<dynamic>>> FetchSessionResult()
+        public async Task<ActionResult<IEnumerable<dynamic>>> FetchSessionResult(string username, string fetchOnlyPublicCluster)
         {
-            var jsonFilePath = "/app/cacheData/log_me_off_clusters.json";
+            var jsonFilePath = $"/app/cacheData/log_me_off_clusters_{username}_{fetchOnlyPublicCluster}.json";
 
             if (System.IO.File.Exists(jsonFilePath))
             {
