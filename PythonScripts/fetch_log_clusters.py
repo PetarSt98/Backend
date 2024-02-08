@@ -42,11 +42,13 @@ if response.status_code == 200:
         clusterName = table.find('ClusterName').text if table.find('ClusterName') is not None else 'N/A'
         isCluster = table.find('IsCluster').text if table.find('IsCluster') is not None else 'N/A'
         isConnected = table.find('isConnected').text if table.find('isConnected') is not None else 'N/A'
+	machineName = table.find('ServerConnectedTo').text if table.find('ServerConnectedTo') is not None else 'N/A'
         #print(clusterName, ' ', isCluster, ' ', isConnected)
         data.append({
             "ClusterName": clusterName,
             "IsCluster": isCluster,
-            "isConnected": isConnected
+            "IsConnected": isConnected,
+	    "MachineName": machineName if machineName != 'null' and machineName is not None else 'N/A'
         })
 
     with open('cacheData/log_me_off_clusters_{}_{}.json'.format(args.username, args.fetchOnlyPublicCluster), 'w') as f:
