@@ -7,6 +7,8 @@ using NetCoreOidcExample.Helpers;
 using System.Text.RegularExpressions;
 using System.Text.Json;
 using System.Data.Entity;
+using System;
+using System.IO;
 
 
 namespace Backend.Controllers
@@ -1259,6 +1261,13 @@ namespace Backend.Controllers
         [SwaggerOperation("Trigger the session data generation process.")]
         public async Task<ActionResult> TriggerSessionGeneration(string username, string fetchOnlyPublicCluster)
         {
+            var jsonFilePath = $"/app/cacheData/log_me_off_clusters_{username}_{fetchOnlyPublicCluster}.json";
+
+            if (System.IO.File.Exists(jsonFilePath))
+            {
+                System.IO.File.Delete(jsonFilePath);
+            }
+
             Task.Run(() => GenerateSessionData(username, fetchOnlyPublicCluster));
 
             return Ok("Session data generation process started.");
