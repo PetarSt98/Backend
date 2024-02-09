@@ -1264,6 +1264,7 @@ namespace Backend.Controllers
             return Ok("Session data generation process started.");
         }
 
+
         [Authorize]
         [HttpGet]
         [Route("result")]
@@ -1285,6 +1286,58 @@ namespace Backend.Controllers
             }
         }
 
+
+        [Authorize]
+        [HttpDelete]
+        [Route("log-off")]
+        [SwaggerOperation("Log-off the user's session.")]
+        public ActionResult LogOffUser(string username, string servername)
+        {
+            if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(servername))
+            {
+                return BadRequest("Username and servername are required.");
+            }
+
+            try { 
+            Console.WriteLine("User log-off initiated.");
+
+            string pathToScript = Path.Combine(Directory.GetCurrentDirectory(), "log_off.py");
+
+            using (var process = new Process())
+            {
+                process.StartInfo.FileName = "python2.7";
+                process.StartInfo.Arguments = $"{pathToScript} --username {username} --servername {servername}";
+                process.StartInfo.UseShellExecute = false;
+                process.StartInfo.RedirectStandardOutput = true;
+                process.StartInfo.RedirectStandardError = true;
+                process.Start();
+
+                string output = process.StandardOutput.ReadToEnd();
+                string errors = process.StandardError.ReadToEnd();
+
+                process.WaitForExit();
+                if (!string.IsNullOrEmpty(errors))
+                {
+                    Console.WriteLine("Error running log-off python script:");
+                    Console.WriteLine(errors);
+                    return BadRequest("Failed to complete log-off operation.");
+                }
+
+                Console.WriteLine("Log-off script output:");
+                Console.WriteLine(output);
+            }
+
+                return Ok("User log-off initiated successfully.");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Exception during log-off: {ex.Message}");
+                return StatusCode(500, "An error occurred while attempting to log off. Please try again later.");
+            }
+        }
+        }
+
+
         private async Task GenerateSessionData(string username, string fetchOnlyPublicCluster)
         {
             Console.WriteLine("Fetching data, successful endpoint reach");
@@ -1303,14 +1356,13 @@ namespace Backend.Controllers
                 string output = process.StandardOutput.ReadToEnd();
                 string errors = process.StandardError.ReadToEnd();
 
-                await Task.Delay(TimeSpan.FromSeconds(10)); // Just to ensure the script has enough time to execute
+                await Task.Delay(TimeSpan.FromSeconds(10));
 
                 process.WaitForExit();
-                Console.WriteLine("Finished running python script.");
+                Console.WriteLine("Finished running fetch python script.");
                 Console.WriteLine(output);
                 Console.WriteLine(errors);
 
-                // Handle errors or logging if needed
             }
         }
     }
