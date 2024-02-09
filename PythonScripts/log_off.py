@@ -20,8 +20,8 @@ url = 'https://terminalservicesws.web.cern.ch/TerminalServicesWS/TerminalService
 
 # Parameters for the GET request
 params = {
-    'username': args.username,
-    'servername': args.servername
+    'userLogin': args.username,
+    'serverName': args.servername
 }
 
 # Make the GET request with Basic Authentication
