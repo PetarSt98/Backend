@@ -1335,7 +1335,7 @@ namespace Backend.Controllers
                 return StatusCode(500, "An error occurred while attempting to log off. Please try again later.");
             }
         }
-        }
+        
 
 
         private async Task GenerateSessionData(string username, string fetchOnlyPublicCluster)
