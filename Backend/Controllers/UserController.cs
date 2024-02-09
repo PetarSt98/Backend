@@ -493,6 +493,8 @@ namespace Backend.Controllers
                             login = user.UserName,
                             port = "3389",
                             enabled = true,
+                            description = "",
+                            resourceGroupDescription = "",
                             resourceGroupName = resourceGroupName,
                             synchronized = false,
                             lastModified = DateTime.Now,
