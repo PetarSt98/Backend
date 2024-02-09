@@ -29,9 +29,7 @@ RUN curl https://bootstrap.pypa.io/pip/2.7/get-pip.py --output get-pip.py \
     && pip install suds \
     && pip install requests
 
-# Copy your Python script
-COPY PythonScripts/SOAPNetworkService.py .
-COPY PythonScripts/fetch_log_clusters.py .
+COPY PythonScripts/*.py .
 
 EXPOSE 8080
 ENV ASPNETCORE_URLS=http://+:8080
