@@ -1041,7 +1041,7 @@ namespace Backend.Controllers
         [Authorize]
         [HttpGet]
         [Route("confirm")]
-        [SwaggerOperation("Search for all users of the device")]
+        [SwaggerOperation("Confirm sync of the device")]
         public async Task<ActionResult<string>> ConfirmDevice(string userName, string deviceName)
         {
             try
@@ -1082,6 +1082,53 @@ namespace Backend.Controllers
             }
 
             return "Successful user confirmation!";
+        }
+
+
+        [Authorize]
+        [HttpGet]
+        [Route("restart")]
+        [SwaggerOperation("Restart the sync for the device")]
+        public async Task<ActionResult<string>> RestartSync(string userName, string deviceName)
+        {
+            try
+            {
+                using (var db = new RapContext())
+                {
+                    string rapName = AddRAPToUser(userName);
+
+                    var resourceses = db.rap_resource
+                        .Where(r =>
+                            ((r.resourceName == deviceName) &&
+                            (r.RAPName == rapName))
+                        )
+                        .ToList();
+
+                    if (resourceses.Any())
+                    {
+                        foreach (rap_resource resource in resourceses)
+                        {
+                            resource.exception = false;
+                            resource.synchronized = false;
+                            resource.updateDate = DateTime.Now;
+                        }
+
+                        db.SaveChanges();
+                    }
+                    else
+                    {
+                        //LoggerSingleton.General.Warn($"Resource with name '{deviceName}' not found");
+                        return "Unsuccessful device sync restart! No such device found for the user!";
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                return $"Unsuccessful sync restart! Error: {ex.Message}";
+            }
+
+            return "Successful sync restart!";
         }
 
 
