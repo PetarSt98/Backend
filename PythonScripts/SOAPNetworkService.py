@@ -59,6 +59,7 @@ allowed_domains_str = os.environ.get('ALLOWED_DOMAINS')
 allowed_domains = allowed_domains_str .split(',')
 e_group_non_primary = os.environ.get('NON_PRIMARY_EGROUP')
 e_group_admins = os.environ.get('ADMINS_EGROUP')
+e_group_admins_cluster = os.environ.get('CLUSTER_ADMINS')
 
 admins_only_flag = sys.argv[3] if len(sys.argv) > 2 else exit("Please specify the adminsOnly flag")
 # e_group_primary = sys.argv[6] if len(sys.argv) > 5 else exit("Please specify the egroup for primary accounts")
@@ -161,6 +162,14 @@ all_members = flatten_nested_egroups(members)
 
 for member in sorted(all_members):
     print(member)
+
+initial_group_members = ldapsearch_group_members(e_group_admins_cluster)
+members = get_group_members(initial_group_members)
+all_members = flatten_nested_egroups(members)
+
+for member in sorted(all_members):
+    print(member)
+
 print("-------------------------")
 
 if (egroups is None or len(egroups) == 0):
