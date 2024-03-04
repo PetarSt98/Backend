@@ -1304,7 +1304,7 @@ namespace Backend.Controllers
     [ApiController]
     public class Debugger : ControllerBase
     {
-        public struct RAPContent
+        public class RAPContent
         {
             public bool enabled;
             public string resourceGroupName;
@@ -1314,7 +1314,7 @@ namespace Backend.Controllers
         }
 
 
-        public struct RAPResourceContent
+        public class RAPResourceContent
         {
             public string resourceName;
             public string resourceOwner;
@@ -1327,7 +1327,7 @@ namespace Backend.Controllers
         }
 
 
-        public struct DBContent
+        public class DBContent
         {
             public RAPContent rapContent;
             public List<RAPResourceContent> rapResourceContentList;
@@ -1336,7 +1336,7 @@ namespace Backend.Controllers
 
         public class UserInfo
         {
-            public string Username { get; set; }
+            public string ? Username { get; set; }
         }
 
 
@@ -1351,7 +1351,7 @@ namespace Backend.Controllers
 
             try
             {
-                dbContent.LGinfo = ExecuteDebugApi($"LG-{request.Username}");
+                dbContent.LGinfo = await ExecuteDebugApi($"LG-{request.Username}");
 
                 using (var db = new RapContext())
                 {
@@ -1402,7 +1402,7 @@ namespace Backend.Controllers
             return Ok(dbContent);
         }
 
-        public Dictionary<string, List<string>> ExecuteDebugApi(string groupName)
+        public static async Task<Dictionary<string, List<string>>> ExecuteDebugApi(string groupName)
         {
             try
             {
