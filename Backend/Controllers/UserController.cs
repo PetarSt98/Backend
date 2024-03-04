@@ -1306,32 +1306,32 @@ namespace Backend.Controllers
     {
         public class RAPContent
         {
-            public bool enabled;
-            public string resourceGroupName;
-            public bool synchronized;
-            public bool toDelete;
-            public string unsynchronizedGateways;
+            public bool enabled { get; set; }
+            public string resourceGroupName { get; set; }
+            public bool synchronized { get; set; }
+            public bool toDelete { get; set; }
+            public string unsynchronizedGateways { get; set; }
         }
 
 
         public class RAPResourceContent
         {
-            public string resourceName;
-            public string resourceOwner;
-            public bool access;
-            public bool synchronized;
-            public bool? invalid;
-            public bool? exception;
-            public bool toDelete;
-            public string unsynchronizedGateways;
+            public string resourceName { get; set; }
+            public string resourceOwner { get; set; }
+            public bool access { get; set; }
+            public bool synchronized { get; set; }
+            public bool? invalid { get; set; }
+            public bool? exception { get; set; }
+            public bool toDelete { get; set; }
+            public string unsynchronizedGateways { get; set; }
         }
 
 
         public class DBContent
         {
-            public RAPContent rapContent;
-            public List<RAPResourceContent> rapResourceContentList;
-            public Dictionary<string, List<string>> LGinfo;
+            public RAPContent rapContent { get; set; }
+            public List<RAPResourceContent> rapResourceContentList { get; set; }
+            public Dictionary<string, List<string>> LGinfo { get; set; }
         }
 
         public class UserInfo
@@ -1346,17 +1346,20 @@ namespace Backend.Controllers
         [SwaggerOperation("Fetch debug data.")]
         public async Task<ActionResult<DBContent>> FetchUserData([FromBody] UserInfo request)
         {
+            Console.WriteLine("Starting debug");
             DBContent dbContent = new DBContent();
             dbContent.rapResourceContentList = new List<RAPResourceContent>();
 
             try
             {
                 dbContent.LGinfo = await ExecuteDebugApi($"LG-{request.Username}");
-
+                Console.WriteLine("Successful DB data fetch");
                 using (var db = new RapContext())
                 {
+                    var rapName = $"RAP_{request.Username}";
+                    Console.WriteLine(rapName);
                     var fetchedRaps = await db.raps
-                        .Where(r => (r.name == $"RAP_{request.Username}"))
+                        .Where(r => (r.name == rapName))
                         .ToListAsync();
 
                     if (fetchedRaps.Any())
@@ -1370,14 +1373,16 @@ namespace Backend.Controllers
                     }
 
                     var fetchedResources = await db.rap_resource
-                        .Where(r => (r.RAPName == $"RAP_{request.Username}"))
+                        .Where(r => (r.RAPName == rapName))
                         .ToListAsync();
 
                     if (fetchedResources.Any())
                     {
+                        RAPResourceContent rapResourceContent;
+
                         foreach (var fetchedResource in fetchedResources)
                         {
-                            RAPResourceContent rapResourceContent = new RAPResourceContent();
+                            rapResourceContent = new RAPResourceContent();
 
                             rapResourceContent.resourceName = fetchedResource.resourceName;
                             rapResourceContent.resourceOwner = fetchedResource.resourceOwner;
@@ -1387,23 +1392,24 @@ namespace Backend.Controllers
                             rapResourceContent.invalid = fetchedResource.invalid ?? true;
                             rapResourceContent.exception = fetchedResource.exception ?? true;
                             rapResourceContent.unsynchronizedGateways = fetchedResource.unsynchronizedGateways;
-
                             dbContent.rapResourceContentList.Add(rapResourceContent);
                         }
                     }
+                    return Ok(JsonSerializer.Serialize(dbContent));
+
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.Message);
+                Console.WriteLine("Error");
                 return BadRequest(ex.Message);
             }
-
-            return Ok(dbContent);
         }
 
         public static async Task<Dictionary<string, List<string>>> ExecuteDebugApi(string groupName)
         {
+            Console.WriteLine("Fetching debug info");
+            Console.WriteLine(groupName);
             try
             {
                 string pathToScript = Path.Combine(Directory.GetCurrentDirectory(), "debugger.py");
@@ -1433,11 +1439,12 @@ namespace Backend.Controllers
                         {
                             currentGateway = line.Split(new string[] { "Gateway server " }, StringSplitOptions.None)[1].Trim(':');
                             result[currentGateway] = new List<string>();
+                            Console.WriteLine(currentGateway);
                             errorOccurred = false; // Reset error flag for new gateway
                         }
-                        else if (line.Contains("Get-LocalGroupMember : Failed to compare two elements in the array."))
+                        else if (line.Contains("Failed to compare two elements in the array."))
                         {
-                            // This indicates an error for the current gateway; add it with an empty list
+                            Console.WriteLine("Empty gateway");
                             errorOccurred = true;
                         }
                         else if (!errorOccurred && line.StartsWith("User"))
@@ -1446,6 +1453,7 @@ namespace Backend.Controllers
                             if (parts.Length > 1)
                             {
                                 string username = parts[1].Trim().Split(' ')[0];
+                                username = username.Replace("$", "");
                                 result[currentGateway].Add(username);
                             }
                         }
@@ -1456,7 +1464,8 @@ namespace Backend.Controllers
 
                     if (!string.IsNullOrEmpty(errors))
                     {
-                        throw new InvalidFetchingException(errors);
+                        if (!errors.Contains("CryptographyDeprecationWarning") && !errors.Contains("Failed to compare two elements in the array."))
+                            throw new InvalidFetchingException(errors);
                     }
 
                     return result;
@@ -1464,6 +1473,7 @@ namespace Backend.Controllers
             }
             catch (Exception ex)
             {
+                Console.WriteLine("DBContent data fetching problem");
                 Console.WriteLine(ex.ToString());
                 throw; // Rethrowing the exception to be handled by the caller
             }
