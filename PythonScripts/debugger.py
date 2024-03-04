@@ -11,7 +11,7 @@ if __name__ == '__main__':
         group_name = sys.argv[1]
 
         for computer_name in computer_names:
-                print('Gateway server', computer_name, ':')
+                print 'Gateway server {} :'.format(computer_name)
                 # Creating a secure session using the credentials
                 session = winrm.Session('http://{}:5985/wsman'.format(computer_name),
                                 auth=(username, password),
