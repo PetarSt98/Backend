@@ -13,11 +13,11 @@ if __name__ == '__main__':
         for computer_name in computer_names:
                 print('Gateway server', computer_name, ':')
                 # Creating a secure session using the credentials
-                session = winrm.Session(f'http://{computer_name}:5985/wsman',
+                session = winrm.Session('http://{}:5985/wsman'.format(computer_name),
                                 auth=(username, password),
                                 transport='ntlm')
                 # PowerShell command to get local group members
-                ps_script = f"Get-LocalGroupMember -Group '{group_name}'"
+                ps_script = "Get-LocalGroupMember -Group '{}'".format(group_name)
 
                 # Executing the command on the remote machine
                 result = session.run_ps(ps_script)
