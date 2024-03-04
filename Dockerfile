@@ -27,7 +27,8 @@ RUN mkdir /app/cacheData && chmod 777 /app/cacheData
 RUN curl https://bootstrap.pypa.io/pip/2.7/get-pip.py --output get-pip.py \
     && python2.7 get-pip.py \
     && pip install suds \
-    && pip install requests
+    && pip install requests \ 
+    && pip install pywinrm
 
 COPY PythonScripts/*.py .
 
