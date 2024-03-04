@@ -1299,6 +1299,178 @@ namespace Backend.Controllers
         }
     }
 
+
+    [Route("api/debugger")]
+    [ApiController]
+    public class Debugger : ControllerBase
+    {
+        public struct RAPContent
+        {
+            public bool enabled;
+            public string resourceGroupName;
+            public bool synchronized;
+            public bool toDelete;
+            public string unsynchronizedGateways;
+        }
+
+
+        public struct RAPResourceContent
+        {
+            public string resourceName;
+            public string resourceOwner;
+            public bool access;
+            public bool synchronized;
+            public bool? invalid;
+            public bool? exception;
+            public bool toDelete;
+            public string unsynchronizedGateways;
+        }
+
+
+        public struct DBContent
+        {
+            public RAPContent rapContent;
+            public List<RAPResourceContent> rapResourceContentList;
+            public Dictionary<string, List<string>> LGinfo;
+        }
+
+        public class UserInfo
+        {
+            public string Username { get; set; }
+        }
+
+
+        [Authorize]
+        [HttpPost]
+        [Route("logs")]
+        [SwaggerOperation("Fetch debug data.")]
+        public async Task<ActionResult<DBContent>> FetchUserData([FromBody] UserInfo request)
+        {
+            DBContent dbContent = new DBContent();
+            dbContent.rapResourceContentList = new List<RAPResourceContent>();
+
+            try
+            {
+                dbContent.LGinfo = ExecuteDebugApi($"LG-{request.Username}");
+
+                using (var db = new RapContext())
+                {
+                    var fetchedRaps = await db.raps
+                        .Where(r => (r.name == $"RAP_{request.Username}"))
+                        .ToListAsync();
+
+                    if (fetchedRaps.Any())
+                    {
+                        dbContent.rapContent = new RAPContent();
+                        dbContent.rapContent.enabled = fetchedRaps[0].enabled;
+                        dbContent.rapContent.resourceGroupName = fetchedRaps[0].resourceGroupName;
+                        dbContent.rapContent.synchronized = fetchedRaps[0].synchronized;
+                        dbContent.rapContent.toDelete = fetchedRaps[0].toDelete;
+                        dbContent.rapContent.unsynchronizedGateways = fetchedRaps[0].unsynchronizedGateways;
+                    }
+
+                    var fetchedResources = await db.rap_resource
+                        .Where(r => (r.RAPName == $"RAP_{request.Username}"))
+                        .ToListAsync();
+
+                    if (fetchedResources.Any())
+                    {
+                        foreach (var fetchedResource in fetchedResources)
+                        {
+                            RAPResourceContent rapResourceContent = new RAPResourceContent();
+
+                            rapResourceContent.resourceName = fetchedResource.resourceName;
+                            rapResourceContent.resourceOwner = fetchedResource.resourceOwner;
+                            rapResourceContent.synchronized = fetchedResource.synchronized;
+                            rapResourceContent.toDelete = fetchedResource.toDelete;
+                            rapResourceContent.access = fetchedResource.access;
+                            rapResourceContent.invalid = fetchedResource.invalid ?? true;
+                            rapResourceContent.exception = fetchedResource.exception ?? true;
+                            rapResourceContent.unsynchronizedGateways = fetchedResource.unsynchronizedGateways;
+
+                            dbContent.rapResourceContentList.Add(rapResourceContent);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                return BadRequest(ex.Message);
+            }
+
+            return Ok(dbContent);
+        }
+
+        public Dictionary<string, List<string>> ExecuteDebugApi(string groupName)
+        {
+            try
+            {
+                string pathToScript = Path.Combine(Directory.GetCurrentDirectory(), "debugger.py");
+                Dictionary<string, List<string>> result = new Dictionary<string, List<string>>();
+
+                using (var process = new Process())
+                {
+                    process.StartInfo.FileName = "python2.7"; // Assuming Python 3.x is used
+                    process.StartInfo.Arguments = $"{pathToScript} {groupName}";
+                    process.StartInfo.UseShellExecute = false;
+                    process.StartInfo.RedirectStandardOutput = true;
+                    process.StartInfo.RedirectStandardError = true;
+                    process.Start();
+
+                    string currentGateway = string.Empty;
+                    bool errorOccurred = false;
+
+                    while (!process.StandardOutput.EndOfStream)
+                    {
+                        string line = process.StandardOutput.ReadLine();
+                        if (string.IsNullOrWhiteSpace(line))
+                        {
+                            continue;
+                        }
+
+                        if (line.StartsWith("Gateway server "))
+                        {
+                            currentGateway = line.Split(new string[] { "Gateway server " }, StringSplitOptions.None)[1].Trim(':');
+                            result[currentGateway] = new List<string>();
+                            errorOccurred = false; // Reset error flag for new gateway
+                        }
+                        else if (line.Contains("Get-LocalGroupMember : Failed to compare two elements in the array."))
+                        {
+                            // This indicates an error for the current gateway; add it with an empty list
+                            errorOccurred = true;
+                        }
+                        else if (!errorOccurred && line.StartsWith("User"))
+                        {
+                            string[] parts = line.Split(new string[] { "CERN\\" }, StringSplitOptions.None);
+                            if (parts.Length > 1)
+                            {
+                                string username = parts[1].Trim().Split(' ')[0];
+                                result[currentGateway].Add(username);
+                            }
+                        }
+                    }
+
+                    string errors = process.StandardError.ReadToEnd();
+                    process.WaitForExit();
+
+                    if (!string.IsNullOrEmpty(errors))
+                    {
+                        throw new InvalidFetchingException(errors);
+                    }
+
+                    return result;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.ToString());
+                throw; // Rethrowing the exception to be handled by the caller
+            }
+        }
+    }
+
+
     [Route("api/log_session")]
     [ApiController]
     public class LogSession : ControllerBase
