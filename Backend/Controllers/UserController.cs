@@ -701,12 +701,7 @@ namespace Backend.Controllers
                             continue;
                         }
 
-                        if (line == "AD OK")
-                        {
-                            continue;
-                        }
-
-                        if (line == "AD NOT OK")
+                        if (line.Contains("AD NOT OK"))
                         {
                             result["Error"] = "Device is not in Active Directory!";
                             return result;
