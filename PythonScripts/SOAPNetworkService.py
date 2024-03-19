@@ -8,6 +8,19 @@ from suds.xsd.doctor import ImportDoctor, Import
 from pprint import pprint
 import re
 
+def check_device_in_ad(device_name):
+    ldapsearch_cmd = (
+        'ldapsearch -z 0 -E pr=1000/noprompt -LLL -x -h "xldap.cern.ch" '
+        '-b "DC=cern,DC=ch" "(&(objectClass=computer)(cn={}))"'.format(device_name)
+    )
+    process = subprocess.Popen(ldapsearch_cmd, stdout=subprocess.PIPE, shell=True)
+    output, _ = process.communicate()
+    if "dn:" in output.decode():
+        return True
+    else:
+        return False
+
+
 def ldapsearch_group_members(group_name):
     ldapsearch_cmd = (
         'ldapsearch -z 0 -E pr=1000/noprompt -LLL -x -h "xldap.cern.ch" '
@@ -78,8 +91,13 @@ if (admins_only_flag == 'false'):
         # Calling getDeviceInfo
         deviceName = sys.argv[2] if len(sys.argv) > 1 else exit("Please specify the set name")
         userName = sys.argv[1] if len(sys.argv) > 1 else exit("Please specify the userName")
-        result = client.service.getDeviceInfo(deviceName)
 
+	if check_device_in_ad(device_name):
+    		pprint("AD OK")
+	else:
+    		pprint("AD NOT OK")	
+
+        result = client.service.getDeviceInfo(deviceName)
 
         # Define ldapsearch command
         ldapsearch_base_cmd = 'ldapsearch -z 0 -E pr=1000/noprompt -LLL -x -h "xldap.cern.ch" -b "OU=Users,OU=Organic Units,DC=cern,DC=ch" "(&(objectClass=user)(mail=%s))" cn | grep \'^cn: \' | sed \'s/^cn: //\''

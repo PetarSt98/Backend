@@ -246,6 +246,11 @@ namespace Backend.Controllers
                         throw new InvalidFetchingException($"Device: {resourceName} does not exist!");
                     }
 
+                    if (deviceInfo["Error"] as string == "Device is not in Active Directory!")
+                    {
+                        throw new InvalidFetchingException($"Device {resourceName} is not in Active Directory!");
+                    }
+
                     if (deviceInfo["validUser"] as string != userName)
                     {
                         throw new InvalidFetchingException($"User: {userName} does not exist!");
@@ -407,6 +412,11 @@ namespace Backend.Controllers
                 if (deviceInfo == null)
                 {
                     return $"Device: {user.DeviceName} does not exist!";
+                }
+
+                if (deviceInfo["Error"] as string == "Device is not in Active Directory!")
+                {
+                    return $"Device {user.DeviceName} is not in Active Directory!";
                 }
 
                 if (deviceInfo["validUser"] as string != user.UserName)
@@ -689,6 +699,17 @@ namespace Backend.Controllers
                         if (string.IsNullOrWhiteSpace(line))
                         {
                             continue;
+                        }
+
+                        if (line == "AD OK")
+                        {
+                            continue;
+                        }
+
+                        if (line == "AD NOT OK")
+                        {
+                            result["Error"] = "Device is not in Active Directory!";
+                            return result;
                         }
 
                         if (result.Count < 6 && adminsOnly == "false")
@@ -1151,6 +1172,11 @@ namespace Backend.Controllers
                 if (deviceInfo == null)
                 {
                     return $"Device: {deviceName} does not exist!";
+                }
+
+                if (deviceInfo["Error"] as string == "Device is not in Active Directory!")
+                {
+                    return $"Device {deviceName} is not in Active Directory!";
                 }
 
                 if (deviceInfo["validUser"] as string != userName)
