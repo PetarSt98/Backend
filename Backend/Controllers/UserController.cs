@@ -1152,7 +1152,6 @@ namespace Backend.Controllers
             return "Successful sync restart!";
         }
 
-
         [Authorize]
         [HttpDelete]
         [Route("remove")]
