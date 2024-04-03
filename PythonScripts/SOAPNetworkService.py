@@ -92,9 +92,9 @@ if (admins_only_flag == 'false'):
         deviceName = sys.argv[2] if len(sys.argv) > 1 else exit("Please specify the set name")
         userName = sys.argv[1] if len(sys.argv) > 1 else exit("Please specify the userName")
 
-	if not check_device_in_ad(deviceName):
-    		pprint("AD NOT OK")
-		exit(1)	
+	# if not check_device_in_ad(deviceName):
+    	# 	pprint("AD NOT OK")
+	# 	exit(1)	
 
         result = client.service.getDeviceInfo(deviceName)
 
