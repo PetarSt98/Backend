@@ -26,10 +26,11 @@ RUN mkdir /app/cacheData && chmod 777 /app/cacheData
 # Install Python dependencies
 RUN curl https://bootstrap.pypa.io/pip/2.7/get-pip.py --output get-pip.py \
     && python2.7 get-pip.py \
-    && pip install suds
+    && pip install suds \
+    && pip install requests \ 
+    && pip install pywinrm
 
-# Copy your Python script
-COPY PowerShellScripts/SOAPNetworkService.py .
+COPY PythonScripts/*.py .
 
 EXPOSE 8080
 ENV ASPNETCORE_URLS=http://+:8080

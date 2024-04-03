@@ -7,6 +7,9 @@ using NetCoreOidcExample.Helpers;
 using System.Text.RegularExpressions;
 using System.Text.Json;
 using System.Data.Entity;
+using System;
+using System.IO;
+
 
 namespace Backend.Controllers
 {
@@ -243,6 +246,11 @@ namespace Backend.Controllers
                         throw new InvalidFetchingException($"Device: {resourceName} does not exist!");
                     }
 
+                    if (deviceInfo["Error"] as string == "Device is not in Active Directory!")
+                    {
+                        throw new InvalidFetchingException($"Device {resourceName} is not in Active Directory!");
+                    }
+
                     if (deviceInfo["validUser"] as string != userName)
                     {
                         throw new InvalidFetchingException($"User: {userName} does not exist!");
@@ -406,6 +414,11 @@ namespace Backend.Controllers
                     return $"Device: {user.DeviceName} does not exist!";
                 }
 
+                if (deviceInfo["Error"] as string == "Device is not in Active Directory!")
+                {
+                    return $"Device {user.DeviceName} is not in Active Directory!";
+                }
+
                 if (deviceInfo["validUser"] as string != user.UserName)
                 {
                     return $"User: {user.UserName} does not exist!";
@@ -490,6 +503,8 @@ namespace Backend.Controllers
                             login = user.UserName,
                             port = "3389",
                             enabled = true,
+                            description = "",
+                            resourceGroupDescription = "",
                             resourceGroupName = resourceGroupName,
                             synchronized = false,
                             lastModified = DateTime.Now,
@@ -684,6 +699,12 @@ namespace Backend.Controllers
                         if (string.IsNullOrWhiteSpace(line))
                         {
                             continue;
+                        }
+
+                        if (line.Contains("AD NOT OK"))
+                        {
+                            result["Error"] = "Device is not in Active Directory!";
+                            return result;
                         }
 
                         if (result.Count < 6 && adminsOnly == "false")
@@ -1147,6 +1168,11 @@ namespace Backend.Controllers
                     return $"Device: {deviceName} does not exist!";
                 }
 
+                if (deviceInfo["Error"] as string == "Device is not in Active Directory!")
+                {
+                    return $"Device {deviceName} is not in Active Directory!";
+                }
+
                 if (deviceInfo["validUser"] as string != userName)
                 {
                     return $"User: {userName} does not exist!";
@@ -1292,4 +1318,313 @@ namespace Backend.Controllers
                 : "RAP_" + user;
         }
     }
+
+
+    [Route("api/debugger")]
+    [ApiController]
+    public class Debugger : ControllerBase
+    {
+        public class RAPContent
+        {
+            public bool enabled { get; set; }
+            public string resourceGroupName { get; set; }
+            public bool synchronized { get; set; }
+            public bool toDelete { get; set; }
+            public string unsynchronizedGateways { get; set; }
+        }
+
+
+        public class RAPResourceContent
+        {
+            public string resourceName { get; set; }
+            public string resourceOwner { get; set; }
+            public bool access { get; set; }
+            public bool synchronized { get; set; }
+            public bool? invalid { get; set; }
+            public bool? exception { get; set; }
+            public bool toDelete { get; set; }
+            public string unsynchronizedGateways { get; set; }
+        }
+
+
+        public class DBContent
+        {
+            public RAPContent rapContent { get; set; }
+            public List<RAPResourceContent> rapResourceContentList { get; set; }
+            public Dictionary<string, List<string>> LGinfo { get; set; }
+        }
+
+        public class UserInfo
+        {
+            public string ? Username { get; set; }
+        }
+
+
+        [Authorize]
+        [HttpPost]
+        [Route("logs")]
+        [SwaggerOperation("Fetch debug data.")]
+        public async Task<ActionResult<DBContent>> FetchUserData([FromBody] UserInfo request)
+        {
+            Console.WriteLine("Starting debug");
+            DBContent dbContent = new DBContent();
+            dbContent.rapResourceContentList = new List<RAPResourceContent>();
+
+            try
+            {
+                dbContent.LGinfo = await ExecuteDebugApi($"LG-{request.Username}");
+                Console.WriteLine("Successful DB data fetch");
+                using (var db = new RapContext())
+                {
+                    var rapName = $"RAP_{request.Username}";
+                    Console.WriteLine(rapName);
+                    var fetchedRaps = await db.raps
+                        .Where(r => (r.name == rapName))
+                        .ToListAsync();
+
+                    if (fetchedRaps.Any())
+                    {
+                        dbContent.rapContent = new RAPContent();
+                        dbContent.rapContent.enabled = fetchedRaps[0].enabled;
+                        dbContent.rapContent.resourceGroupName = fetchedRaps[0].resourceGroupName;
+                        dbContent.rapContent.synchronized = fetchedRaps[0].synchronized;
+                        dbContent.rapContent.toDelete = fetchedRaps[0].toDelete;
+                        dbContent.rapContent.unsynchronizedGateways = fetchedRaps[0].unsynchronizedGateways;
+                    }
+
+                    var fetchedResources = await db.rap_resource
+                        .Where(r => (r.RAPName == rapName))
+                        .ToListAsync();
+
+                    if (fetchedResources.Any())
+                    {
+                        RAPResourceContent rapResourceContent;
+
+                        foreach (var fetchedResource in fetchedResources)
+                        {
+                            rapResourceContent = new RAPResourceContent();
+
+                            rapResourceContent.resourceName = fetchedResource.resourceName;
+                            rapResourceContent.resourceOwner = fetchedResource.resourceOwner;
+                            rapResourceContent.synchronized = fetchedResource.synchronized;
+                            rapResourceContent.toDelete = fetchedResource.toDelete;
+                            rapResourceContent.access = fetchedResource.access;
+                            rapResourceContent.invalid = fetchedResource.invalid ?? true;
+                            rapResourceContent.exception = fetchedResource.exception ?? true;
+                            rapResourceContent.unsynchronizedGateways = fetchedResource.unsynchronizedGateways;
+                            dbContent.rapResourceContentList.Add(rapResourceContent);
+                        }
+                    }
+                    return Ok(JsonSerializer.Serialize(dbContent));
+
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Error");
+                return BadRequest(ex.Message);
+            }
+        }
+
+        public static async Task<Dictionary<string, List<string>>> ExecuteDebugApi(string groupName)
+        {
+            Console.WriteLine("Fetching debug info");
+            Console.WriteLine(groupName);
+            try
+            {
+                string pathToScript = Path.Combine(Directory.GetCurrentDirectory(), "debugger.py");
+                Dictionary<string, List<string>> result = new Dictionary<string, List<string>>();
+
+                using (var process = new Process())
+                {
+                    process.StartInfo.FileName = "python2.7"; // Assuming Python 3.x is used
+                    process.StartInfo.Arguments = $"{pathToScript} {groupName}";
+                    process.StartInfo.UseShellExecute = false;
+                    process.StartInfo.RedirectStandardOutput = true;
+                    process.StartInfo.RedirectStandardError = true;
+                    process.Start();
+
+                    string currentGateway = string.Empty;
+                    bool errorOccurred = false;
+
+                    while (!process.StandardOutput.EndOfStream)
+                    {
+                        string line = process.StandardOutput.ReadLine();
+                        if (string.IsNullOrWhiteSpace(line))
+                        {
+                            continue;
+                        }
+
+                        if (line.StartsWith("Gateway server "))
+                        {
+                            currentGateway = line.Split(new string[] { "Gateway server " }, StringSplitOptions.None)[1].Trim(':');
+                            result[currentGateway] = new List<string>();
+                            Console.WriteLine(currentGateway);
+                            errorOccurred = false; // Reset error flag for new gateway
+                        }
+                        else if (line.Contains("Failed to compare two elements in the array."))
+                        {
+                            Console.WriteLine("Empty gateway");
+                            errorOccurred = true;
+                        }
+                        else if (!errorOccurred && line.StartsWith("User"))
+                        {
+                            string[] parts = line.Split(new string[] { "CERN\\" }, StringSplitOptions.None);
+                            if (parts.Length > 1)
+                            {
+                                string username = parts[1].Trim().Split(' ')[0];
+                                username = username.Replace("$", "");
+                                result[currentGateway].Add(username);
+                            }
+                        }
+                    }
+
+                    string errors = process.StandardError.ReadToEnd();
+                    process.WaitForExit();
+
+                    if (!string.IsNullOrEmpty(errors))
+                    {
+                        if (!errors.Contains("CryptographyDeprecationWarning") && !errors.Contains("Failed to compare two elements in the array."))
+                            throw new InvalidFetchingException(errors);
+                    }
+
+                    return result;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("DBContent data fetching problem");
+                Console.WriteLine(ex.ToString());
+                throw; // Rethrowing the exception to be handled by the caller
+            }
+        }
+    }
+
+
+    [Route("api/log_session")]
+    [ApiController]
+    public class LogSession : ControllerBase
+    {
+
+        [Authorize]
+        [HttpGet]
+        [Route("trigger")]
+        [SwaggerOperation("Trigger the session data generation process.")]
+        public async Task<ActionResult> TriggerSessionGeneration(string username, string fetchOnlyPublicCluster)
+        {
+            var jsonFilePath = $"/app/cacheData/log_me_off_clusters_{username}_{fetchOnlyPublicCluster}.json";
+
+            if (System.IO.File.Exists(jsonFilePath))
+            {
+                System.IO.File.Delete(jsonFilePath);
+            }
+
+            Task.Run(() => GenerateSessionData(username, fetchOnlyPublicCluster));
+
+            return Ok("Session data generation process started.");
+        }
+
+
+        [Authorize]
+        [HttpGet]
+        [Route("result")]
+        [SwaggerOperation("Fetch result from the session data generation process.")]
+        public async Task<ActionResult<IEnumerable<dynamic>>> FetchSessionResult(string username, string fetchOnlyPublicCluster)
+        {
+            var jsonFilePath = $"/app/cacheData/log_me_off_clusters_{username}_{fetchOnlyPublicCluster}.json";
+
+            if (System.IO.File.Exists(jsonFilePath))
+            {
+                var jsonData = await System.IO.File.ReadAllTextAsync(jsonFilePath);
+                var clusters = System.Text.Json.JsonSerializer.Deserialize<IEnumerable<dynamic>>(jsonData);
+
+                return Ok(clusters);
+            }
+            else
+            {
+                return BadRequest("Failed to generate session data or data not available yet.");
+            }
+        }
+
+
+        [Authorize]
+        [HttpDelete]
+        [Route("log-off")]
+        [SwaggerOperation("Log-off the user's session.")]
+        public ActionResult LogOffUser(string username, string servername)
+        {
+            if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(servername))
+            {
+                return BadRequest("Username and servername are required.");
+            }
+
+            try { 
+            Console.WriteLine("User log-off initiated.");
+
+            string pathToScript = Path.Combine(Directory.GetCurrentDirectory(), "log_off.py");
+
+            using (var process = new Process())
+            {
+                process.StartInfo.FileName = "python2.7";
+                process.StartInfo.Arguments = $"{pathToScript} --username {username} --servername {servername}";
+                process.StartInfo.UseShellExecute = false;
+                process.StartInfo.RedirectStandardOutput = true;
+                process.StartInfo.RedirectStandardError = true;
+                process.Start();
+
+                string output = process.StandardOutput.ReadToEnd();
+                string errors = process.StandardError.ReadToEnd();
+
+                process.WaitForExit();
+                if (!string.IsNullOrEmpty(errors))
+                {
+                    Console.WriteLine("Error running log-off python script:");
+                    Console.WriteLine(errors);
+                    return BadRequest("Failed to complete log-off operation.");
+                }
+
+                Console.WriteLine("Log-off script output:");
+                Console.WriteLine(output);
+            }
+
+                return Ok("User log-off initiated successfully.");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Exception during log-off: {ex.Message}");
+                return StatusCode(500, "An error occurred while attempting to log off. Please try again later.");
+            }
+        }
+        
+
+
+        private async Task GenerateSessionData(string username, string fetchOnlyPublicCluster)
+        {
+            Console.WriteLine("Fetching data, successful endpoint reach");
+
+            string pathToScript = Path.Combine(Directory.GetCurrentDirectory(), "fetch_log_clusters.py");
+
+            using (var process = new Process())
+            {
+                process.StartInfo.FileName = "python2.7";
+                process.StartInfo.Arguments = $"{pathToScript} --username {username} --fetchOnlyPublicCluster {fetchOnlyPublicCluster}";
+                process.StartInfo.UseShellExecute = false;
+                process.StartInfo.RedirectStandardOutput = true;
+                process.StartInfo.RedirectStandardError = true;
+                process.Start();
+
+                string output = process.StandardOutput.ReadToEnd();
+                string errors = process.StandardError.ReadToEnd();
+
+                await Task.Delay(TimeSpan.FromSeconds(10));
+
+                process.WaitForExit();
+                Console.WriteLine("Finished running fetch python script.");
+                Console.WriteLine(output);
+                Console.WriteLine(errors);
+
+            }
+        }
+    }
+
 }
