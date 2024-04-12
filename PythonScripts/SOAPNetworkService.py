@@ -108,16 +108,18 @@ if (admins_only_flag == 'false'):
                 owner_info = owner_info_process.communicate()[0].strip()
 
                 if ('E-GROUP' in result.ResponsiblePerson.FirstName):
+                        if (userName.lower() == result.ResponsiblePerson.Name.lower()):
+                                owner_info = userName.lower()
                         initial_group_members = ldapsearch_group_members(result.ResponsiblePerson.Name)
                         members = get_group_members(initial_group_members)
                         group_members = expand_groups(members)
-			egroups = egroups | group_members
+                        egroups = egroups | group_members
                         for group_member in group_members:
                                 if (userName in group_member):
                                         owner_info = userName
-					break
+                                        break
                                 else:
-                                        owner_info = result.ResponsiblePerson.Name
+                                        owner_info = result.ResponsiblePerson.Name.lower()
         else:
                 owner_info = ''
 
@@ -131,6 +133,8 @@ if (admins_only_flag == 'false'):
         # pprint(result.UserPerson.FirstName)
 
                 if ('E-GROUP' in result.UserPerson.FirstName):
+                        if (userName.lower() == result.UserPerson.Name.lower()):
+                                user_info = userName.lower()
                         initial_group_members = ldapsearch_group_members(result.UserPerson.Name)
                         members = get_group_members(initial_group_members)
                         group_members = expand_groups(members)
@@ -146,7 +150,10 @@ if (admins_only_flag == 'false'):
         # Get user's full name using ldapsearch
         user_name_process = subprocess.Popen(ldapsearch_user_name_cmd, stdout=subprocess.PIPE, shell=True)
         user_full_name = user_name_process.communicate()[0].strip()
-
+	if (user_full_name is None):
+                user_full_name = userName
+	if (user_full_name == ''):
+                user_full_name = userName
         pprint(result.ResponsiblePerson.Name if result.ResponsiblePerson is not None else '')
         pprint(result.UserPerson.FirstName if result.UserPerson is not None else '')
         pprint(user_info)
