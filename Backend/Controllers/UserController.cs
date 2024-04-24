@@ -1352,6 +1352,7 @@ namespace Backend.Controllers
             public RAPContent rapContent { get; set; }
             public List<RAPResourceContent> rapResourceContentList { get; set; }
             public Dictionary<string, List<string>> LGinfo { get; set; }
+            public Dictionary<string, string> RAPInfo { get; set; }
         }
 
         public class UserInfo
@@ -1373,6 +1374,7 @@ namespace Backend.Controllers
             try
             {
                 dbContent.LGinfo = await ExecuteDebugApi($"LG-{request.Username}");
+                dbContent.RAPInfo = await ExecuteDebugRAPApi($"RAP_{request.Username}");
                 Console.WriteLine("Successful DB data fetch");
                 using (var db = new RapContext())
                 {
@@ -1423,6 +1425,74 @@ namespace Backend.Controllers
             {
                 Console.WriteLine("Error");
                 return BadRequest(ex.Message);
+            }
+        }
+        
+        public static async Task<Dictionary<string, string>> ExecuteDebugRAPApi(string rapName)
+        {
+            Console.WriteLine("Fetching debug_rap info");
+            Console.WriteLine(rapName);
+            try
+            {
+                string pathToScript = Path.Combine(Directory.GetCurrentDirectory(), "debugger_rap.py");
+                Dictionary<string, string> result = new Dictionary<string, string>();
+
+                using (var process = new Process())
+                {
+                    process.StartInfo.FileName = "python2.7"; // Assuming Python 3.x is used
+                    process.StartInfo.Arguments = $"{pathToScript} {rapName}";
+                    process.StartInfo.UseShellExecute = false;
+                    process.StartInfo.RedirectStandardOutput = true;
+                    process.StartInfo.RedirectStandardError = true;
+                    process.Start();
+
+                    string currentGateway = string.Empty;
+                    bool errorOccurred = false;
+
+                    while (!process.StandardOutput.EndOfStream)
+                    {
+                        string line = process.StandardOutput.ReadLine();
+                        if (string.IsNullOrWhiteSpace(line))
+                        {
+                            continue;
+                        }
+
+                        if (line.StartsWith("Gateway server "))
+                        {
+                            currentGateway = line.Split(new string[] { "Gateway server " }, StringSplitOptions.None)[1].Trim(':');
+                            result[currentGateway] = "No RAP";
+                            Console.WriteLine(currentGateway);
+                            errorOccurred = false; // Reset error flag for new gateway
+                        }
+                        else if (line.Contains("Failed to fetch XML file"))
+                        {
+                            Console.WriteLine("Empty rap");
+                            errorOccurred = true;
+                        }
+                        else if (!errorOccurred && line.Length > 0)
+                        {
+                            Console.WriteLine(line);
+                            result[currentGateway] = line;   
+                        }
+                    }
+
+                    string errors = process.StandardError.ReadToEnd();
+                    process.WaitForExit();
+
+                    if (!string.IsNullOrEmpty(errors))
+                    {
+                        if (!errors.Contains("CryptographyDeprecationWarning") && !errors.Contains("Failed to compare two elements in the array."))
+                            throw new InvalidFetchingException(errors);
+                    }
+
+                    return result;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("DBContent data fetching problem");
+                Console.WriteLine(ex.ToString());
+                throw; // Rethrowing the exception to be handled by the caller
             }
         }
 
