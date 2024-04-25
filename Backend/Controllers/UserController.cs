@@ -1472,7 +1472,14 @@ namespace Backend.Controllers
                         else if (!errorOccurred && line.Length > 0)
                         {
                             Console.WriteLine(line);
-                            result[currentGateway] = line;   
+                            if (line.StartsWith("RAP_"))
+                            {
+                                result[currentGateway] = line;
+                            }
+                            else if (line.Contains("Corrupted"))
+                            {
+                                result[currentGateway] = "Corrupted RAP";
+                            }
                         }
                     }
 
