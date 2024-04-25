@@ -1371,6 +1371,8 @@ namespace Backend.Controllers
             DBContent dbContent = new DBContent();
             dbContent.rapResourceContentList = new List<RAPResourceContent>();
 
+            request.Username = request.Username.Trim().ToLower();
+
             try
             {
                 dbContent.LGinfo = await ExecuteDebugApi($"LG-{request.Username}");
