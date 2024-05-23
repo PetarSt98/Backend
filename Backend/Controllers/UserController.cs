@@ -560,7 +560,8 @@ namespace Backend.Controllers
                                 createDate = oldResource.createDate,
                                 updateDate = oldResource.updateDate,
                                 toDelete = oldResource.toDelete,
-                                unsynchronizedGateways = oldResource.unsynchronizedGateways
+                                unsynchronizedGateways = oldResource.unsynchronizedGateways,
+                                alias = oldResource.alias
                             };
 
                             newResources.Add(newResource);
@@ -610,7 +611,8 @@ namespace Backend.Controllers
                             createDate = DateTime.Now,
                             updateDate = DateTime.Now,
                             toDelete = false,
-                            unsynchronizedGateways = ""
+                            unsynchronizedGateways = "",
+                            alias = false
                             
                         };
 
@@ -1344,6 +1346,7 @@ namespace Backend.Controllers
             public bool? exception { get; set; }
             public bool toDelete { get; set; }
             public string unsynchronizedGateways { get; set; }
+            public bool alias { get; set; }
         }
 
 
@@ -1416,6 +1419,7 @@ namespace Backend.Controllers
                             rapResourceContent.invalid = fetchedResource.invalid ?? true;
                             rapResourceContent.exception = fetchedResource.exception ?? true;
                             rapResourceContent.unsynchronizedGateways = fetchedResource.unsynchronizedGateways;
+                            rapResourceContent.alias = fetchedResource.alias;
                             dbContent.rapResourceContentList.Add(rapResourceContent);
                         }
                     }
