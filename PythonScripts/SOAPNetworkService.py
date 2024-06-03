@@ -30,6 +30,23 @@ def ldapsearch_group_members(group_name):
     output, _ = process.communicate()
     return output.decode()
 
+def ldapsearch_user_groups(username):
+    ldapsearch_cmd = (
+        'ldapsearch -z 0 -E pr=1000/noprompt -LLL -x -h "xldap.cern.ch" '
+        '-b "DC=cern,DC=ch" "(&(objectClass=group)(member=CN={},OU=Users,OU=Organic Units,DC=cern,DC=ch))" cn'.format(username)
+    )
+    # print("Running LDAP search with command:", ldapsearch_cmd)  # Debug: Print the command
+    process = subprocess.Popen(ldapsearch_cmd, stdout=subprocess.PIPE, shell=True)
+    output, _ = process.communicate()
+    # print("Raw LDAP output:", output.decode())  # Debug: Print raw output
+
+    group_names = ''
+    # Process the output to extract group names
+    for line in output.decode().splitlines():
+        if line.startswith('cn:'):
+            group_names += line.split(': ')[1]
+    return group_names
+
 def get_group_members(group_output):
     members = []
     for line in group_output.splitlines():
@@ -63,9 +80,6 @@ url = 'https://network.cern.ch/sc/soap/soap.fcgi?v=6&WSDL'
 imp = Import('http://schemas.xmlsoap.org/soap/encoding/')
 doc = ImportDoctor(imp)
 client = Client(url, doctor=doc, cache=None)
-# Authentication
-# username = sys.argv[3] if len(sys.argv) > 2 else exit("Please specify the username")
-# password = sys.argv[4] if len(sys.argv) > 3 else exit("Please specify the password")
 username = os.environ.get('USERNAME')
 password = os.environ.get('PASSWORD')
 allowed_domains_str = os.environ.get('ALLOWED_DOMAINS')
@@ -75,8 +89,6 @@ e_group_admins = os.environ.get('ADMINS_EGROUP')
 e_group_admins_cluster = os.environ.get('CLUSTER_ADMINS')
 
 admins_only_flag = sys.argv[3] if len(sys.argv) > 2 else exit("Please specify the adminsOnly flag")
-# e_group_primary = sys.argv[6] if len(sys.argv) > 5 else exit("Please specify the egroup for primary accounts")
-# e_group_non_primary = sys.argv[4] if len(sys.argv) > 3 else exit("Please specify the egroup for exceptions of non-primary accounts")
 
 if (admins_only_flag != 'false' and admins_only_flag != "true"):
         exit("Please specify the adminsOnly flag as string true or false")
@@ -92,9 +104,11 @@ if (admins_only_flag == 'false'):
         deviceName = sys.argv[2] if len(sys.argv) > 1 else exit("Please specify the set name")
         userName = sys.argv[1] if len(sys.argv) > 1 else exit("Please specify the userName")
 
+
 	# if not check_device_in_ad(deviceName):
     	# 	pprint("AD NOT OK")
 	# 	exit(1)	
+
 
         result = client.service.getDeviceInfo(deviceName)
 
@@ -150,15 +164,16 @@ if (admins_only_flag == 'false'):
         # Get user's full name using ldapsearch
         user_name_process = subprocess.Popen(ldapsearch_user_name_cmd, stdout=subprocess.PIPE, shell=True)
         user_full_name = user_name_process.communicate()[0].strip()
-	if (user_full_name is None):
+        if (user_full_name is None):
                 user_full_name = userName
-	if (user_full_name == ''):
+        if (user_full_name == ''):
                 user_full_name = userName
         pprint(result.ResponsiblePerson.Name if result.ResponsiblePerson is not None else '')
         pprint(result.UserPerson.FirstName if result.UserPerson is not None else '')
         pprint(user_info)
         pprint(owner_info)
         pprint(user_full_name)
+        pprint('Primary' if 'cern-accounts-primary' in ldapsearch_user_groups(userName) else 'Secondary')
         if (result.Interfaces != None):
                 not_ok_flag = True
                 for interface in result.Interfaces:
@@ -170,15 +185,6 @@ if (admins_only_flag == 'false'):
                         pprint("NOT OK")
         else:
                 pprint("OK")
-
-# ldapsearch_groups_cmd = 'ldapsearch -z 0 -E pr=1000/noprompt -LLL -x -h "xldap.cern.ch" -b "DC=cern,DC=ch" "(&(objectClass=group)(cn={0}))" member'.format(e_group_admins)
-
-# # dfsmigapp01
-
-# group_members_process = subprocess.Popen(ldapsearch_groups_cmd, stdout=subprocess.PIPE, shell=True)
-# group_members = group_members_process.communicate()[0].strip()
-
-# print(group_members)
 
 initial_group_members = ldapsearch_group_members(e_group_admins)
 members = get_group_members(initial_group_members)
@@ -204,24 +210,14 @@ else:
 #print(egroups)
 
 if (admins_only_flag == 'false'):
-        ldapsearch_groups_cmd = 'ldapsearch -z 0 -E pr=1000/noprompt -LLL -x -h "xldap.cern.ch" -b "DC=cern,DC=ch" "(&(objectClass=group)(cn={0}))" member'.format(e_group_non_primary)
-
-        # dfsmigapp01
         print("-------------------------")
-        group_members_process = subprocess.Popen(ldapsearch_groups_cmd, stdout=subprocess.PIPE, shell=True)
-        group_members = group_members_process.communicate()[0].strip()
-        print(group_members)
+        initial_group_members = ldapsearch_group_members(e_group_non_primary)
+        members = get_group_members(initial_group_members)
+        all_members = flatten_nested_egroups(members)
 
-        # ldapsearch_groups_cmd = 'ldapsearch -z 0 -E pr=1000/noprompt -LLL -x -h "xldap.cern.ch" -b "DC=cern,DC=ch" "(&(objectClass=group)(cn={0}))" member'.format(e_group_non_primary)
-        # group_members_process = subprocess.Popen(ldapsearch_groups_cmd, stdout=subprocess.PIPE, shell=True)
-        # group_members = group_members_process.communicate()[0].strip()
-        # print(group_members)
+        for member in sorted(all_members):
+            print(member)
 
 
-# ldapsearch_groups_cmd = 'ldapsearch -z 0 -E pr=1000/noprompt -LLL -x -h "xldap.cern.ch" -b "OU=Users,OU=Organic Units,DC=cern,DC=ch" "(&(objectClass=user)(cn=%s))" memberOf'
 
-# user_groups_search_cmd = ldapsearch_groups_cmd % "support-windows-servers"
-# user_groups_process = subprocess.Popen(user_groups_search_cmd, stdout=subprocess.PIPE, shell=True)
-# user_groups = user_groups_process.communicate()[0].strip()
 
-# print(user_groups)

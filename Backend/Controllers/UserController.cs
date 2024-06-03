@@ -454,12 +454,19 @@ namespace Backend.Controllers
                 List<string> admins = deviceInfo["EGroupNames"] as List<string>;
                 List<string> egroupUsers = deviceInfo["EGroupUsers"] as List<string>;
 
-                if (user.PrimaryUser != "Primary" && admins?.Contains(user.SignedInUser) != true)
+                if (user.PrimaryUser.Contains("Primary") && (deviceInfo["PrimaryUser"] as string).Contains("Primary") && admins?.Contains(user.SignedInUser) != true)
                 {
                     List<string> primaryAccounts = deviceInfo["PrimaryAccounts"] as List<string>;
-                    if (!primaryAccounts.Contains(user.PrimaryUser) && user.AddDeviceOrUser == "user")
+                    if (!primaryAccounts.Contains(user.PrimaryUser))
                     {
-                        return $"Signed in user: {user.PrimaryUser} is not a primary account!\nOnly primary accounts can manage users!";
+                        if (user.AddDeviceOrUser == "user")
+                        {
+                            return $"Provided user: {user.PrimaryUser} is not a primary account!\nOnly primary accounts can be added to configurations!";
+                        }
+                        else
+                        {
+                            return $"Signed in user: {user.PrimaryUser} is not a primary account!\nOnly primary accounts can add configurations!";
+                        }
                     }
                 }
 
@@ -709,7 +716,7 @@ namespace Backend.Controllers
                             return result;
                         }
 
-                        if (result.Count < 6 && adminsOnly == "false")
+                        if (result.Count < 7 && adminsOnly == "false")
                         {
                             string data = line.Replace("'", "").Replace("\r", "").Replace("\n", "");
                             switch(result.Count)
@@ -730,6 +737,9 @@ namespace Backend.Controllers
                                     result["validUser"] = data;
                                     break;
                                 case 5:
+                                    result["PrimaryUser"] = data;
+                                    break;
+                                case 6:
                                     result["domain"] = data;
                                     break;
                                 default:
