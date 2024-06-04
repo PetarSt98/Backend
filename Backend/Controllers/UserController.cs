@@ -466,18 +466,18 @@ namespace Backend.Controllers
                 }
 
 
-                if (user.PrimaryUser.Contains("Primary") && (deviceInfo["PrimaryUser"] as string).Contains("Primary") && admins?.Contains(user.SignedInUser) != true)
+                if (!(deviceInfo["PrimaryUser"] as string).Contains("Primary") && admins?.Contains(user.UserName) != true)
                 {
                     List<string> primaryAccounts = deviceInfo["PrimaryAccounts"] as List<string>;
-                    if (!primaryAccounts.Contains(user.PrimaryUser))
+                    if (!primaryAccounts.Contains(user.UserName))
                     {
                         if (user.AddDeviceOrUser == "user")
                         {
-                            return $"Provided user: {user.PrimaryUser} is not a primary account!\nOnly primary accounts can be added to configurations!";
+                            return $"Provided user: {user.UserName} is not a primary account!\nOnly primary accounts can be added to configurations!";
                         }
                         else
                         {
-                            return $"Signed in user: {user.PrimaryUser} is not a primary account!\nOnly primary accounts can add configurations!";
+                            return $"Signed in user: {user.UserName} is not a primary account!\nOnly primary accounts can add configurations!";
                         }
                     }
                 }
