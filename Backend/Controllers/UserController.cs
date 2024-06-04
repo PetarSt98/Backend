@@ -453,18 +453,6 @@ namespace Backend.Controllers
 
                 List<string> admins = deviceInfo["EGroupNames"] as List<string>;
                 List<string> egroupUsers = deviceInfo["EGroupUsers"] as List<string>;
-                Console.WriteLine($"user.PrimaryUser {user.PrimaryUser}");
-                Console.WriteLine($"PrimaryUser {deviceInfo["PrimaryUser"] as string}");
-                Console.WriteLine($"user.PrimaryUser {user.PrimaryUser}");
-                foreach (var admin in admins)
-                {
-                    Console.WriteLine($"admin {admin}");
-                }
-                foreach (var nonprimary in deviceInfo["PrimaryAccounts"] as List<string>)
-                {
-                    Console.WriteLine($"nonprimary {nonprimary}");
-                }
-
 
                 if (!(deviceInfo["PrimaryUser"] as string).Contains("Primary") && admins?.Contains(user.UserName) != true)
                 {
