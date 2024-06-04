@@ -454,7 +454,7 @@ namespace Backend.Controllers
                 List<string> admins = deviceInfo["EGroupNames"] as List<string>;
                 List<string> egroupUsers = deviceInfo["EGroupUsers"] as List<string>;
 
-                if (!(deviceInfo["PrimaryUser"] as string).Contains("Primary") && admins?.Contains(user.UserName) != true)
+                if ((deviceInfo["PrimaryUser"] as string).Contains("Secondary"))
                 {
                     List<string> primaryAccounts = deviceInfo["PrimaryAccounts"] as List<string>;
                     if (!primaryAccounts.Contains(user.UserName))

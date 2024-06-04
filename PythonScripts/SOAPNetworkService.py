@@ -45,7 +45,7 @@ def ldapsearch_user_groups(username):
     for line in output.decode().splitlines():
         if line.startswith('cn:'):
             group_names += line.split(': ')[1]
-    return group_names
+    return group_names.lower()
 
 def get_group_members(group_output):
     members = []
